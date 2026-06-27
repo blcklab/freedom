@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>freedom — vanilla example</title>
+  <style>
+    body { margin: 0; height: 100vh; background: #1e1f24; overflow: hidden; font-family: system-ui, sans-serif; }
+    .win {
+      background: #2b2d33;
+      border: 1px solid #3a3d45;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      color: #e6e6e6;
+      overflow: hidden;
+    }
+    .win.freedom-focused { border-color: #5b8cff; box-shadow: 0 12px 28px rgba(91, 140, 255, 0.25); }
+    .win-header {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: #34373f;
+      cursor: move;
+      user-select: none;
+      font-size: 13px;
+    }
+    .win-body { padding: 16px; font-size: 14px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div id="win-a" class="win" style="width:340px;height:220px;">
+    <div class="win-header">Window A — drag me by the header</div>
+    <div class="win-body">Resize me from any corner. Try dragging me near the edge of the screen to see the snap plugin in action.</div>
+  </div>
+
+  <div id="win-b" class="win" style="width:300px;height:180px;">
+    <div class="win-header">Window B</div>
+    <div class="win-body">Click either window to bring it to the front.</div>
+  </div>
+
+  <script type="module">
+    import { freedom } from '../dist/index.js';
+
+    const manager = freedom.manager();
+
+    function mountWindow(elementId, initialPosition) {
+      const element = document.getElementById(elementId);
+
+      const win = freedom.window(element, {
+        initialPosition,
+        minWidth: 220,
+        minHeight: 140,
+        dragHandle: '.win-header',
+        bounds: 'viewport',
+        plugins: [freedom.plugins.snap({ threshold: 12 })],
+      });
+
+      // Clicking anywhere on the window brings it to front.
+      element.addEventListener('pointerdown', () => manager.focus(win));
+
+      manager.register(win);
+      return win;
+    }
+
+    mountWindow('win-a', { x: 80, y: 80 });
+    mountWindow('win-b', { x: 460, y: 160 });
+  </script>
+</body>
+</html>

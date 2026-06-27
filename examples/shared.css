@@ -1,0 +1,40 @@
+/* examples/shared.css — used by the React and Vue example panels */
+
+body {
+  margin: 0;
+  height: 100vh;
+  background: #1e1f24;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
+
+.panel {
+  background: #2b2d33;
+  border: 1px solid #3a3d45;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  color: #e6e6e6;
+  overflow: hidden;
+}
+
+.panel.freedom-focused {
+  border-color: #5b8cff;
+  box-shadow: 0 12px 28px rgba(91, 140, 255, 0.25);
+}
+
+.panel-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #34373f;
+  cursor: move;
+  user-select: none;
+  font-size: 13px;
+}
+
+.panel-body {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
