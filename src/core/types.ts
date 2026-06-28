@@ -38,7 +38,7 @@ export interface Bounds {
  */
 export type BoundsOption = 'none' | 'viewport' | 'parent' | Rect;
 
-export type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se';
+export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 // ---------------------------------------------------------------------------
 // Interaction event payloads

@@ -3,7 +3,10 @@
  *
  * Pure interaction logic for dragging: converts raw pointer movement into
  * a next `Point`, applying bounds and plugin transforms in order. Contains
- * no DOM writes — the caller (runtime/window.ts) decides how/when to paint.
+ * no DOM writes and no DOM listeners — it's driven entirely by
+ * InteractionManager, which feeds it pointer coordinates and consumes the
+ * geometry it calculates back. begin()/move()/end() map 1:1 onto
+ * pointerdown/pointermove/pointerup.
  */
 
 import type {
@@ -14,7 +17,6 @@ import type {
   PluginContext,
   Size,
 } from '../core/types';
-import { createPointerDragController, type PointerDragController } from '../core/pointer';
 import { constrainToBounds } from './constraints';
 
 export interface DragEngineOptions {
@@ -24,29 +26,37 @@ export interface DragEngineOptions {
   pluginContext: PluginContext;
   getPosition(): Point;
   getSize(): Size;
-  onStart(data: DragEventData): void;
-  onMove(next: Point, data: DragEventData): void;
-  onEnd(data: DragEventData): void;
 }
 
-export function createDragEngine(
-  handle: HTMLElement,
-  options: DragEngineOptions
-): PointerDragController {
+export interface DragMoveResult {
+  position: Point;
+  data: DragEventData;
+}
+
+export interface DragEngine {
+  /** Call once, on pointerdown, before any move(). Returns the dragstart payload. */
+  begin(pointer: Point, pointerEvent: PointerEvent): DragEventData;
+  /** Call on every pointermove while dragging. */
+  move(pointer: Point, pointerEvent: PointerEvent): DragMoveResult;
+  /** Call once, on pointerup/pointercancel. Returns the dragend payload. */
+  end(pointer: Point, pointerEvent: PointerEvent): DragEventData;
+}
+
+export function createDragEngine(options: DragEngineOptions): DragEngine {
   let startPointer: Point = { x: 0, y: 0 };
   let startPosition: Point = { x: 0, y: 0 };
 
-  return createPointerDragController(handle, {
-    onStart(event) {
-      startPointer = { x: event.clientX, y: event.clientY };
+  return {
+    begin(pointer, pointerEvent) {
+      startPointer = pointer;
       startPosition = options.getPosition();
-      options.onStart({ position: startPosition, delta: { x: 0, y: 0 }, pointerEvent: event });
+      return { position: startPosition, delta: { x: 0, y: 0 }, pointerEvent };
     },
 
-    onMove(event) {
+    move(pointer, pointerEvent) {
       const delta: Point = {
-        x: event.clientX - startPointer.x,
-        y: event.clientY - startPointer.y,
+        x: pointer.x - startPointer.x,
+        y: pointer.y - startPointer.y,
       };
 
       let next: Point = { x: startPosition.x + delta.x, y: startPosition.y + delta.y };
@@ -55,21 +65,21 @@ export function createDragEngine(
       for (const plugin of options.plugins) {
         if (!plugin.onDrag) continue;
         const result = plugin.onDrag(
-          { position: next, delta, pointerEvent: event },
+          { position: next, delta, pointerEvent },
           options.pluginContext
         );
         if (result) next = result;
       }
 
-      options.onMove(next, { position: next, delta, pointerEvent: event });
+      return { position: next, data: { position: next, delta, pointerEvent } };
     },
 
-    onEnd(event) {
+    end(pointer, pointerEvent) {
       const delta: Point = {
-        x: event.clientX - startPointer.x,
-        y: event.clientY - startPointer.y,
+        x: pointer.x - startPointer.x,
+        y: pointer.y - startPointer.y,
       };
-      options.onEnd({ position: options.getPosition(), delta, pointerEvent: event });
+      return { position: options.getPosition(), delta, pointerEvent };
     },
-  });
+  };
 }

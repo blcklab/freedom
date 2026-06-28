@@ -2,21 +2,20 @@
  * runtime/window.ts
  *
  * The composition root for a single window: owns the authoritative state
- * (position/size/zIndex/focus), wires the drag/resize engines to the DOM,
- * batches paints through the frame scheduler, and exposes the public
- * FreedomWindow API. This is the only place in the library where the SSR
- * guard lives — every other module assumes a browser environment because
- * it is only ever reached through this function.
+ * (position/size/zIndex/focus), wires a single InteractionManager (which
+ * owns ALL pointer events for this window) to one DragEngine and one
+ * ResizeEngine, batches paints through the frame scheduler, and exposes
+ * the public FreedomWindow API. This is the only place in the library
+ * where the SSR guard lives — every other module assumes a browser
+ * environment because it is only ever reached through this function.
  */
 
 import type {
-  DragEventData,
   FreedomPlugin,
   FreedomWindow,
   FreedomWindowOptions,
   Point,
   PluginContext,
-  ResizeEventData,
   ResizeHandle,
   Size,
   WindowEventMap,
@@ -25,7 +24,7 @@ import { Emitter } from '../core/events';
 import { clampSize, type SizeLimits } from '../core/math';
 import { createDragEngine } from '../engine/drag';
 import { createResizeEngine } from '../engine/resize';
-import type { PointerDragController } from '../core/pointer';
+import { createInteractionManager } from '../core/interaction-manager';
 import { applyBaseStyles, writePosition, writeSize } from '../dom/render';
 import { createResizeHandle } from '../dom/handles';
 import { createFrameScheduler } from '../dom/scheduler';
@@ -85,7 +84,7 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   }
 
   // pluginContext.window is filled in once `api` exists (see below), but the
-  // object reference is created up front so engines can close over it.
+  // object reference is created up front so the engines can close over it.
   const pluginContext: PluginContext = {
     element,
     get window(): FreedomWindow {
@@ -93,88 +92,60 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     },
   };
 
-  // ---- drag ------------------------------------------------------------------
+  // ---- drag area --------------------------------------------------------------
   const dragHandleElement = resolveDragHandle(element, options.dragHandle);
-  let dragController: PointerDragController | null = null;
 
-  function setupDrag(): void {
-    if (dragController || !dragHandleElement) return;
-    dragController = createDragEngine(dragHandleElement, {
-      element,
-      bounds: options.bounds,
-      plugins,
-      pluginContext,
-      getPosition: () => position,
-      getSize: () => size,
-      onStart(data: DragEventData) {
-        element.classList.add('freedom-dragging');
-        emitter.emit('dragstart', data);
-      },
-      onMove(next: Point, data: DragEventData) {
-        position = next;
-        paint(position);
-        emitter.emit('drag', data);
-      },
-      onEnd(data: DragEventData) {
-        element.classList.remove('freedom-dragging');
-        emitter.emit('dragend', data);
-      },
-    });
+  function isDragTarget(target: EventTarget | null): boolean {
+    if (!isDraggable || !dragHandleElement) return false;
+    if (!(target instanceof Node)) return false;
+    return dragHandleElement === target || dragHandleElement.contains(target);
   }
 
-  function teardownDrag(): void {
-    dragController?.destroy();
-    dragController = null;
-  }
+  const dragEngine = createDragEngine({
+    element,
+    bounds: options.bounds,
+    plugins,
+    pluginContext,
+    getPosition: () => position,
+    getSize: () => size,
+  });
 
-  // ---- resize ------------------------------------------------------------------
+  // ---- resize handles -----------------------------------------------------------
+  // Only DOM bookkeeping lives here now — dispatch is owned by the
+  // InteractionManager below, so there's nothing per-handle to start/stop.
   const resizeHandleElements = new Map<ResizeHandle, HTMLElement>();
-  const resizeControllers = new Map<ResizeHandle, PointerDragController>();
 
-  function setupResize(handles: readonly ResizeHandle[]): void {
+  function resolveResizeHandle(target: EventTarget | null): ResizeHandle | null {
+    if (!(target instanceof Element)) return null;
+    const handleEl = target.closest<HTMLElement>('.freedom-resize-handle');
+    if (!handleEl) return null;
+    for (const [handle, el] of resizeHandleElements) {
+      if (el === handleEl) return handle;
+    }
+    return null; // not one of OUR (currently-enabled) handles
+  }
+
+  const resizeEngine = createResizeEngine({
+    element,
+    bounds: options.bounds,
+    ...limits,
+    plugins,
+    pluginContext,
+    getPosition: () => position,
+    getSize: () => size,
+  });
+
+  function setupResizeHandles(handles: readonly ResizeHandle[]): void {
     for (const handle of handles) {
-      if (resizeControllers.has(handle)) continue;
-
-      let handleEl = resizeHandleElements.get(handle);
-      if (!handleEl) {
-        handleEl = createResizeHandle(handle);
-        element.appendChild(handleEl);
-        resizeHandleElements.set(handle, handleEl);
-      }
-
-      const controller = createResizeEngine(handleEl, handle, {
-        element,
-        bounds: options.bounds,
-        ...limits,
-        plugins,
-        pluginContext,
-        getPosition: () => position,
-        getSize: () => size,
-        onStart(data: ResizeEventData) {
-          element.classList.add('freedom-resizing');
-          emitter.emit('resizestart', data);
-        },
-        onMove(result, data: ResizeEventData) {
-          position = result.position;
-          size = result.size;
-          paint(position, size);
-          emitter.emit('resize', data);
-        },
-        onEnd(data: ResizeEventData) {
-          element.classList.remove('freedom-resizing');
-          emitter.emit('resizeend', data);
-        },
-      });
-
-      resizeControllers.set(handle, controller);
+      if (resizeHandleElements.has(handle)) continue;
+      const handleEl = createResizeHandle(handle);
+      element.appendChild(handleEl);
+      resizeHandleElements.set(handle, handleEl);
     }
   }
 
-  function teardownResize(handles: readonly ResizeHandle[] = ALL_HANDLES): void {
+  function teardownResizeHandles(handles: readonly ResizeHandle[] = ALL_HANDLES): void {
     for (const handle of handles) {
-      resizeControllers.get(handle)?.destroy();
-      resizeControllers.delete(handle);
-
       const handleEl = resizeHandleElements.get(handle);
       if (handleEl) {
         handleEl.remove();
@@ -183,9 +154,46 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     }
   }
 
-  if (isDraggable) setupDrag();
+  // ---- the single interaction manager --------------------------------------------
+  const interactionManager = createInteractionManager({
+    element,
+    dragEngine,
+    resizeEngine,
+    resolveResizeHandle,
+    isDragTarget,
+
+    onDragStart(data) {
+      element.classList.add('freedom-dragging');
+      emitter.emit('dragstart', data);
+    },
+    onDragMove({ position: next, data }) {
+      position = next;
+      paint(position);
+      emitter.emit('drag', data);
+    },
+    onDragEnd(data) {
+      element.classList.remove('freedom-dragging');
+      emitter.emit('dragend', data);
+    },
+
+    onResizeStart(data) {
+      element.classList.add('freedom-resizing');
+      emitter.emit('resizestart', data);
+    },
+    onResizeMove({ position: nextPosition, size: nextSize, data }) {
+      position = nextPosition;
+      size = nextSize;
+      paint(position, size);
+      emitter.emit('resize', data);
+    },
+    onResizeEnd(data) {
+      element.classList.remove('freedom-resizing');
+      emitter.emit('resizeend', data);
+    },
+  });
+
   const initialResizeHandles = resolveEnabledHandles(options.resizable ?? true);
-  if (initialResizeHandles.length > 0) setupResize(initialResizeHandles);
+  if (initialResizeHandles.length > 0) setupResizeHandles(initialResizeHandles);
 
   for (const plugin of plugins) plugin.onInit?.(pluginContext);
 
@@ -232,26 +240,36 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     getZIndex: () => zIndex,
 
     enableDrag(): void {
+      // isDragTarget reads `isDraggable` live — nothing else to wire up.
       isDraggable = true;
-      setupDrag();
     },
     disableDrag(): void {
       isDraggable = false;
-      teardownDrag();
+      // TODO: if a drag is mid-gesture when this is called, we abort it
+      // silently (no `dragend` fires) — matches the old behavior, but a
+      // future version might prefer to emit a synthetic dragend instead.
+      if (interactionManager.active === 'drag') {
+        interactionManager.cancel();
+        element.classList.remove('freedom-dragging');
+      }
     },
 
     enableResize(handles: ResizeHandle[] = ALL_HANDLES as ResizeHandle[]): void {
-      setupResize(handles);
+      setupResizeHandles(handles);
     },
     disableResize(): void {
-      teardownResize();
+      if (interactionManager.active === 'resize') {
+        interactionManager.cancel();
+        element.classList.remove('freedom-resizing');
+      }
+      teardownResizeHandles();
     },
 
     destroy(): void {
       if (isDestroyed) return;
       isDestroyed = true;
-      teardownDrag();
-      teardownResize();
+      interactionManager.destroy();
+      teardownResizeHandles();
       scheduler.cancel();
       for (const plugin of plugins) plugin.onDestroy?.(pluginContext);
       emitter.emit('destroy', undefined);
