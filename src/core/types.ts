@@ -121,8 +121,8 @@ export interface FreedomWindowOptions {
   draggable?: boolean;
 
   /**
-   * Which corners can resize the window.
-   * `true` = all four corners, `false` = none, or an explicit subset.
+   * Which handles can resize the window.
+   * `true` = all eight handles, `false` = none, or an explicit subset.
    * Default: true.
    */
   resizable?: boolean | ResizeHandle[];

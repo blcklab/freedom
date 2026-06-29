@@ -3,7 +3,7 @@
 A lightweight, framework-agnostic library for draggable and resizable windows.
 
 - Draggable windows
-- Optional resizing
+- Optional resizing from edges and corners
 - Zero dependencies
 - pointer Events support (mouse, touch & pen)
 - Works with any framework or vanilla JavaScript

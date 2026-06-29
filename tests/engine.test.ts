@@ -11,7 +11,7 @@ import { createDragEngine } from '../src/engine/drag';
 import { createResizeEngine } from '../src/engine/resize';
 import { createManager } from '../src/manager/manager';
 import { clamp, clampSize, clampPointToBounds } from '../src/core/math';
-import type { FreedomWindow, PluginContext } from '../src/core/types';
+import type { FreedomWindow, PluginContext, ResizeHandle } from '../src/core/types';
 
 class FakeEventTarget {
   private listeners = new Map<string, Set<(e: any) => void>>();
@@ -70,46 +70,34 @@ describe('core/math', () => {
 
 describe('engine/drag', () => {
   it('applies the pointer delta to the starting position', () => {
-    const handle = new FakeElement();
-    const win = (globalThis as any).window as FakeEventTarget;
+    const element = new FakeElement();
     let position = { x: 100, y: 100 };
     const size = { width: 200, height: 150 };
-    const moves: Array<{ x: number; y: number }> = [];
 
-    createDragEngine(handle as unknown as HTMLElement, {
-      element: handle as unknown as HTMLElement,
+    const engine = createDragEngine({
+      element: element as unknown as HTMLElement,
       bounds: undefined,
       plugins: [],
       pluginContext: {} as PluginContext,
       getPosition: () => position,
       getSize: () => size,
-      onStart: () => {},
-      onMove: (next) => {
-        position = next;
-        moves.push(next);
-      },
-      onEnd: () => {},
     });
 
-    fire(handle, win, 'pointerdown', { clientX: 50, clientY: 50 });
-    fire(handle, win, 'pointermove', { clientX: 80, clientY: 40 }); // delta (+30, -10)
-    fire(handle, win, 'pointerup', { clientX: 80, clientY: 40 });
+    engine.begin({ x: 50, y: 50 }, {} as PointerEvent);
+    const result = engine.move({ x: 80, y: 40 }, {} as PointerEvent); // delta (+30, -10)
+    position = result.position;
 
-    expect(moves).toHaveLength(1);
     expect(position).toEqual({ x: 130, y: 90 });
   });
 });
 
 describe('engine/resize', () => {
-  it('nw handle shrinks size and anchors the opposite (se) corner', () => {
-    const handleEl = new FakeElement();
+  function makeEngine(handle: ResizeHandle) {
     const elementEl = new FakeElement();
-    const win = (globalThis as any).window as FakeEventTarget;
-
     let position = { x: 100, y: 100 };
     let size = { width: 300, height: 200 };
 
-    createResizeEngine(handleEl as unknown as HTMLElement, 'nw', {
+    const engine = createResizeEngine({
       element: elementEl as unknown as HTMLElement,
       bounds: undefined,
       minWidth: 50,
@@ -120,33 +108,42 @@ describe('engine/resize', () => {
       pluginContext: {} as PluginContext,
       getPosition: () => position,
       getSize: () => size,
-      onStart: () => {},
-      onMove: (result) => {
-        position = result.position;
-        size = result.size;
-      },
-      onEnd: () => {},
     });
 
-    fire(handleEl, win, 'pointerdown', { clientX: 0, clientY: 0 });
-    fire(handleEl, win, 'pointermove', { clientX: 20, clientY: 10 });
-    fire(handleEl, win, 'pointerup', { clientX: 20, clientY: 10 });
+    engine.begin(handle, { x: 0, y: 0 }, {} as PointerEvent);
 
-    expect(size).toEqual({ width: 280, height: 190 });
-    expect(position).toEqual({ x: 120, y: 110 });
-    expect(position.x + size.width).toBe(400);
-    expect(position.y + size.height).toBe(300);
+    return {
+      move(pointer: { x: number; y: number }) {
+        const result = engine.move(pointer, {} as PointerEvent);
+        position = result.position;
+        size = result.size;
+        return result;
+      },
+      get position() {
+        return position;
+      },
+      get size() {
+        return size;
+      },
+    };
+  }
+
+  it('nw handle shrinks size and anchors the opposite (se) corner', () => {
+    const resize = makeEngine('nw');
+    resize.move({ x: 20, y: 10 });
+
+    expect(resize.size).toEqual({ width: 280, height: 190 });
+    expect(resize.position).toEqual({ x: 120, y: 110 });
+    expect(resize.position.x + resize.size.width).toBe(400);
+    expect(resize.position.y + resize.size.height).toBe(300);
   });
 
   it('se handle respects minWidth/minHeight without moving the top-left anchor', () => {
-    const handleEl = new FakeElement();
     const elementEl = new FakeElement();
-    const win = (globalThis as any).window as FakeEventTarget;
-
     let position = { x: 0, y: 0 };
     let size = { width: 100, height: 100 };
 
-    createResizeEngine(handleEl as unknown as HTMLElement, 'se', {
+    const engine = createResizeEngine({
       element: elementEl as unknown as HTMLElement,
       bounds: undefined,
       minWidth: 80,
@@ -157,20 +154,41 @@ describe('engine/resize', () => {
       pluginContext: {} as PluginContext,
       getPosition: () => position,
       getSize: () => size,
-      onStart: () => {},
-      onMove: (result) => {
-        position = result.position;
-        size = result.size;
-      },
-      onEnd: () => {},
     });
 
-    fire(handleEl, win, 'pointerdown', { clientX: 0, clientY: 0 });
-    fire(handleEl, win, 'pointermove', { clientX: -50, clientY: -50 });
-    fire(handleEl, win, 'pointerup', { clientX: -50, clientY: -50 });
+    engine.begin('se', { x: 0, y: 0 }, {} as PointerEvent);
+    const result = engine.move({ x: -50, y: -50 }, {} as PointerEvent);
+    position = result.position;
+    size = result.size;
 
     expect(size).toEqual({ width: 80, height: 80 });
     expect(position).toEqual({ x: 0, y: 0 });
+  });
+
+  it('e and w handles resize width only', () => {
+    const east = makeEngine('e');
+    east.move({ x: 25, y: 80 });
+    expect(east.size).toEqual({ width: 325, height: 200 });
+    expect(east.position).toEqual({ x: 100, y: 100 });
+
+    const west = makeEngine('w');
+    west.move({ x: 25, y: 80 });
+    expect(west.size).toEqual({ width: 275, height: 200 });
+    expect(west.position).toEqual({ x: 125, y: 100 });
+    expect(west.position.x + west.size.width).toBe(400);
+  });
+
+  it('n and s handles resize height only', () => {
+    const south = makeEngine('s');
+    south.move({ x: 80, y: 25 });
+    expect(south.size).toEqual({ width: 300, height: 225 });
+    expect(south.position).toEqual({ x: 100, y: 100 });
+
+    const north = makeEngine('n');
+    north.move({ x: 80, y: 25 });
+    expect(north.size).toEqual({ width: 300, height: 175 });
+    expect(north.position).toEqual({ x: 100, y: 125 });
+    expect(north.position.y + north.size.height).toBe(300);
   });
 });
 

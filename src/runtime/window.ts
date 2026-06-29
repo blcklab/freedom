@@ -29,7 +29,7 @@ import { applyBaseStyles, writePosition, writeSize } from '../dom/render';
 import { createResizeHandle } from '../dom/handles';
 import { createFrameScheduler } from '../dom/scheduler';
 
-const ALL_HANDLES: readonly ResizeHandle[] = ['nw', 'ne', 'sw', 'se'];
+const ALL_HANDLES: readonly ResizeHandle[] = ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'];
 
 let autoId = 0;
 

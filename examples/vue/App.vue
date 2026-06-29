@@ -1,6 +1,6 @@
 <template>
   <Panel title="Inspector" :initial-position="{ x: 60, y: 60 }" :manager="manager">
-    Drag by the header, resize from any corner.
+    Drag by the header, resize from any edge or corner.
   </Panel>
   <Panel title="Console" :initial-position="{ x: 460, y: 140 }" :manager="manager">
     Click a panel to bring it to the front.

@@ -61,7 +61,7 @@ export default function App() {
   return (
     <>
       <Panel title="Inspector" initialPosition={{ x: 60, y: 60 }}>
-        Drag by the header, resize from any corner.
+        Drag by the header, resize from any edge or corner.
       </Panel>
       <Panel title="Console" initialPosition={{ x: 460, y: 140 }}>
         Click a panel to bring it to the front.
