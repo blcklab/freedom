@@ -1,20 +1,20 @@
 /**
  * runtime/window.ts
  *
- * The composition root for a single window: owns the authoritative state
- * (position/size/zIndex/focus), wires a single InteractionManager (which
- * owns ALL pointer events for this window) to one DragEngine and one
- * ResizeEngine, batches paints through the frame scheduler, and exposes
- * the public FreedomWindow API. This is the only place in the library
- * where the SSR guard lives — every other module assumes a browser
- * environment because it is only ever reached through this function.
+ * Composition root for a single window. Initialization is intentionally
+ * synchronous: base styles, initial size, initial position, and optional reveal
+ * all happen before `freedom.window(...)` returns, so consumers can avoid the
+ * common top-left flash during first render.
  */
 
 import type {
+  BoundsOption,
   FreedomPlugin,
   FreedomWindow,
   FreedomWindowOptions,
+  InitialPosition,
   Point,
+  PositioningMode,
   PluginContext,
   ResizeHandle,
   Size,
@@ -30,43 +30,54 @@ import { createResizeHandle } from '../dom/handles';
 import { createFrameScheduler } from '../dom/scheduler';
 
 const ALL_HANDLES: readonly ResizeHandle[] = ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'];
+const instances = new WeakMap<HTMLElement, FreedomWindow>();
 
 let autoId = 0;
 
 export function createWindow(element: HTMLElement, options: FreedomWindowOptions = {}): FreedomWindow {
-  if (typeof document === 'undefined') {
-    throw new Error('freedom.window() requires a browser environment (document is undefined).');
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    throw new Error('freedom.window() requires a browser environment. Importing is SSR-safe, but creating a window must run in the browser.');
+  }
+
+  assertHTMLElement(element);
+
+  if (instances.has(element)) {
+    throw new Error('freedom.window() was called more than once for the same element. Destroy the existing instance before creating a new one.');
   }
 
   const id = options.id ?? `freedom-window-${++autoId}`;
   const emitter = new Emitter<WindowEventMap>();
   const plugins: readonly FreedomPlugin[] = options.plugins ?? [];
+  const limits = normalizeSizeLimits(options);
+  const positioning = resolvePositioning(element, options);
 
-  const limits: SizeLimits = {
-    minWidth: options.minWidth ?? 0,
-    minHeight: options.minHeight ?? 0,
-    maxWidth: options.maxWidth ?? Infinity,
-    maxHeight: options.maxHeight ?? Infinity,
-  };
+  // The order matters: apply stable positioning first, resolve size second,
+  // resolve position third. This lets `initialPosition: 'center'` use the real
+  // initial size and avoids one-frame jumps.
+  applyBaseStyles(element, {
+    positioning,
+    forcePositioning: shouldForcePositioning(options, positioning),
+  });
 
-  // ---- authoritative state -------------------------------------------------
-  let position: Point = options.initialPosition ?? readInitialPosition(element);
-  let size: Size = clampSize(options.initialSize ?? readInitialSize(element), limits);
-  let zIndex = options.zIndex ?? 0;
+  let size: Size = clampSize(sanitizeSize(options.initialSize ?? readInitialSize(element), 'initialSize'), limits);
+  let position: Point = resolveInitialPosition(options.initialPosition, element, size, options.bounds, positioning);
+  let zIndex = normalizeZIndex(options.zIndex ?? 0);
   let focused = false;
   let isDraggable = options.draggable ?? true;
   let isDestroyed = false;
 
-  applyBaseStyles(element);
-  writePosition(element, position);
   writeSize(element, size);
+  writePosition(element, position);
   if (zIndex) element.style.zIndex = String(zIndex);
+  revealIfRequested(element, options);
 
   // ---- batched painting ------------------------------------------------------
   let pendingPosition: Point | null = null;
   let pendingSize: Size | null = null;
 
   const scheduler = createFrameScheduler(() => {
+    if (isDestroyed) return;
+
     if (pendingPosition) {
       writePosition(element, pendingPosition);
       pendingPosition = null;
@@ -83,8 +94,12 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     scheduler.schedule();
   }
 
-  // pluginContext.window is filled in once `api` exists (see below), but the
-  // object reference is created up front so the engines can close over it.
+  function assertAlive(method: string): void {
+    if (isDestroyed) {
+      throw new Error(`Cannot call ${method}() on a destroyed freedom window.`);
+    }
+  }
+
   const pluginContext: PluginContext = {
     element,
     get window(): FreedomWindow {
@@ -110,19 +125,19 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     getSize: () => size,
   });
 
-  // ---- resize handles -----------------------------------------------------------
-  // Only DOM bookkeeping lives here now — dispatch is owned by the
-  // InteractionManager below, so there's nothing per-handle to start/stop.
+  // ---- resize handles --------------------------------------------------------
   const resizeHandleElements = new Map<ResizeHandle, HTMLElement>();
 
   function resolveResizeHandle(target: EventTarget | null): ResizeHandle | null {
     if (!(target instanceof Element)) return null;
     const handleEl = target.closest<HTMLElement>('.freedom-resize-handle');
     if (!handleEl) return null;
+
     for (const [handle, el] of resizeHandleElements) {
       if (el === handleEl) return handle;
     }
-    return null; // not one of OUR (currently-enabled) handles
+
+    return null;
   }
 
   const resizeEngine = createResizeEngine({
@@ -136,7 +151,8 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   });
 
   function setupResizeHandles(handles: readonly ResizeHandle[]): void {
-    for (const handle of handles) {
+    const normalizedHandles = normalizeResizeHandles(handles);
+    for (const handle of normalizedHandles) {
       if (resizeHandleElements.has(handle)) continue;
       const handleEl = createResizeHandle(handle);
       element.appendChild(handleEl);
@@ -154,7 +170,7 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     }
   }
 
-  // ---- the single interaction manager --------------------------------------------
+  // ---- the single interaction manager ---------------------------------------
   const interactionManager = createInteractionManager({
     element,
     dragEngine,
@@ -195,27 +211,35 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   const initialResizeHandles = resolveEnabledHandles(options.resizable ?? true);
   if (initialResizeHandles.length > 0) setupResizeHandles(initialResizeHandles);
 
-  for (const plugin of plugins) plugin.onInit?.(pluginContext);
-
   // ---- public API ------------------------------------------------------------
   const api: FreedomWindow = {
     id,
     element,
 
-    getPosition: () => ({ ...position }),
-    getSize: () => ({ ...size }),
+    getPosition(): Point {
+      assertAlive('getPosition');
+      return { ...position };
+    },
+
+    getSize(): Size {
+      assertAlive('getSize');
+      return { ...size };
+    },
 
     setPosition(point: Point): void {
-      position = { ...point };
+      assertAlive('setPosition');
+      position = sanitizePoint(point, 'setPosition');
       paint(position);
     },
 
     setSize(nextSize: Size): void {
-      size = clampSize(nextSize, limits);
+      assertAlive('setSize');
+      size = clampSize(sanitizeSize(nextSize, 'setSize'), limits);
       paint(undefined, size);
     },
 
     focus(): void {
+      assertAlive('focus');
       if (focused) return;
       focused = true;
       element.classList.add('freedom-focused');
@@ -224,6 +248,7 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     },
 
     blur(): void {
+      assertAlive('blur');
       if (!focused) return;
       focused = false;
       element.classList.remove('freedom-focused');
@@ -231,23 +256,30 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
       options.onBlur?.();
     },
 
-    isFocused: () => focused,
+    isFocused(): boolean {
+      assertAlive('isFocused');
+      return focused;
+    },
 
     setZIndex(next: number): void {
-      zIndex = next;
-      element.style.zIndex = String(next);
+      assertAlive('setZIndex');
+      zIndex = normalizeZIndex(next);
+      element.style.zIndex = String(zIndex);
     },
-    getZIndex: () => zIndex,
+
+    getZIndex(): number {
+      assertAlive('getZIndex');
+      return zIndex;
+    },
 
     enableDrag(): void {
-      // isDragTarget reads `isDraggable` live — nothing else to wire up.
+      assertAlive('enableDrag');
       isDraggable = true;
     },
+
     disableDrag(): void {
+      assertAlive('disableDrag');
       isDraggable = false;
-      // TODO: if a drag is mid-gesture when this is called, we abort it
-      // silently (no `dragend` fires) — matches the old behavior, but a
-      // future version might prefer to emit a synthetic dragend instead.
       if (interactionManager.active === 'drag') {
         interactionManager.cancel();
         element.classList.remove('freedom-dragging');
@@ -255,9 +287,12 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     },
 
     enableResize(handles: ResizeHandle[] = ALL_HANDLES as ResizeHandle[]): void {
+      assertAlive('enableResize');
       setupResizeHandles(handles);
     },
+
     disableResize(): void {
+      assertAlive('disableResize');
       if (interactionManager.active === 'resize') {
         interactionManager.cancel();
         element.classList.remove('freedom-resizing');
@@ -271,15 +306,20 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
       interactionManager.destroy();
       teardownResizeHandles();
       scheduler.cancel();
+      element.classList.remove('freedom-dragging', 'freedom-resizing', 'freedom-focused');
       for (const plugin of plugins) plugin.onDestroy?.(pluginContext);
       emitter.emit('destroy', undefined);
       emitter.clear();
+      instances.delete(element);
     },
 
     on(event, handler) {
+      assertAlive('on');
       return emitter.on(event, handler);
     },
   };
+
+  instances.set(element, api);
 
   // Wire convenience option callbacks onto the same emitter consumers use.
   if (options.onDragStart) api.on('dragstart', options.onDragStart);
@@ -289,6 +329,8 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   if (options.onResize) api.on('resize', options.onResize);
   if (options.onResizeEnd) api.on('resizeend', options.onResizeEnd);
 
+  for (const plugin of plugins) plugin.onInit?.(pluginContext);
+
   return api;
 }
 
@@ -296,16 +338,157 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
 // Helpers
 // ---------------------------------------------------------------------------
 
+function assertHTMLElement(element: unknown): asserts element is HTMLElement {
+  const maybeElement = element as Partial<HTMLElement> | null | undefined;
+  const isUsableElement =
+    !!maybeElement &&
+    typeof maybeElement === 'object' &&
+    (maybeElement as { nodeType?: number }).nodeType === 1 &&
+    typeof maybeElement.getBoundingClientRect === 'function' &&
+    !!maybeElement.style &&
+    typeof maybeElement.addEventListener === 'function' &&
+    typeof maybeElement.removeEventListener === 'function';
+
+  if (!isUsableElement) {
+    throw new TypeError('freedom.window(element) expected a real HTMLElement. Received null, undefined, or a non-element value.');
+  }
+}
+
+function normalizeSizeLimits(options: FreedomWindowOptions): SizeLimits {
+  const minWidth = finiteNonNegative(options.minWidth, 0);
+  const minHeight = finiteNonNegative(options.minHeight, 0);
+  const maxWidth = finitePositiveOrInfinity(options.maxWidth, Infinity);
+  const maxHeight = finitePositiveOrInfinity(options.maxHeight, Infinity);
+
+  return {
+    minWidth,
+    minHeight,
+    maxWidth: Math.max(minWidth, maxWidth),
+    maxHeight: Math.max(minHeight, maxHeight),
+  };
+}
+
+function finiteNonNegative(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function finitePositiveOrInfinity(value: number | undefined, fallback: number): number {
+  if (value === Infinity) return Infinity;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function normalizeZIndex(value: number): number {
+  return Number.isFinite(value) ? Math.trunc(value) : 0;
+}
+
+function sanitizePoint(point: Point, source: string): Point {
+  if (!point || typeof point.x !== 'number' || typeof point.y !== 'number' || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+    throw new TypeError(`freedom.window(): ${source} expected a finite { x, y } point.`);
+  }
+  return { x: point.x, y: point.y };
+}
+
+function sanitizeSize(size: Size, source: string): Size {
+  if (!size || typeof size.width !== 'number' || typeof size.height !== 'number' || !Number.isFinite(size.width) || !Number.isFinite(size.height)) {
+    throw new TypeError(`freedom.window(): ${source} expected a finite { width, height } size.`);
+  }
+  return { width: Math.max(0, size.width), height: Math.max(0, size.height) };
+}
+
+function shouldForcePositioning(options: FreedomWindowOptions, positioning: PositioningMode): boolean {
+  return Boolean(options.positioning) || (options.initialPosition === 'center' && positioning === 'fixed');
+}
+
+function resolvePositioning(element: HTMLElement, options: FreedomWindowOptions): PositioningMode {
+  if (options.positioning) return options.positioning;
+
+  const computedPosition = window.getComputedStyle(element).position;
+  if (computedPosition === 'fixed') return 'fixed';
+  if (options.initialPosition === 'center' && (!options.bounds || options.bounds === 'viewport')) return 'fixed';
+  return 'absolute';
+}
+
+function resolveInitialPosition(
+  initialPosition: InitialPosition | undefined,
+  element: HTMLElement,
+  size: Size,
+  bounds: BoundsOption | undefined,
+  positioning: PositioningMode
+): Point {
+  if (initialPosition === 'center') {
+    return centerPosition(element, size, bounds, positioning);
+  }
+
+  if (initialPosition) {
+    return sanitizePoint(initialPosition, 'initialPosition');
+  }
+
+  return readInitialPosition(element);
+}
+
+function centerPosition(
+  element: HTMLElement,
+  size: Size,
+  bounds: BoundsOption | undefined,
+  positioning: PositioningMode
+): Point {
+  const box = resolveCenterBox(element, bounds, positioning);
+
+  return {
+    x: Math.round(box.x + Math.max(0, box.width - size.width) / 2),
+    y: Math.round(box.y + Math.max(0, box.height - size.height) / 2),
+  };
+}
+
+function resolveCenterBox(
+  element: HTMLElement,
+  bounds: BoundsOption | undefined,
+  positioning: PositioningMode
+): { x: number; y: number; width: number; height: number } {
+  if (bounds && typeof bounds === 'object') {
+    return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+  }
+
+  if (bounds === 'parent') {
+    const parent = element.offsetParent as HTMLElement | null;
+    if (parent) return { x: 0, y: 0, width: parent.clientWidth, height: parent.clientHeight };
+  }
+
+  if (positioning === 'absolute' && bounds !== 'viewport') {
+    const parent = element.offsetParent as HTMLElement | null;
+    if (parent) return { x: 0, y: 0, width: parent.clientWidth, height: parent.clientHeight };
+  }
+
+  const root = document.documentElement;
+  return {
+    x: 0,
+    y: 0,
+    width: window.innerWidth || root.clientWidth,
+    height: window.innerHeight || root.clientHeight,
+  };
+}
+
 function readInitialPosition(element: HTMLElement): Point {
-  return { x: element.offsetLeft, y: element.offsetTop };
+  return {
+    x: element.offsetLeft || 0,
+    y: element.offsetTop || 0,
+  };
 }
 
 function readInitialSize(element: HTMLElement): Size {
   const rect = element.getBoundingClientRect();
   return {
-    width: rect.width || element.offsetWidth,
-    height: rect.height || element.offsetHeight,
+    width: rect.width || element.offsetWidth || 0,
+    height: rect.height || element.offsetHeight || 0,
   };
+}
+
+function revealIfRequested(element: HTMLElement, options: FreedomWindowOptions): void {
+  if (options.autoReveal === false) return;
+  const visibility = window.getComputedStyle(element).visibility;
+  if (visibility === 'hidden') {
+    element.style.visibility = 'visible';
+  }
 }
 
 function resolveDragHandle(
@@ -314,14 +497,25 @@ function resolveDragHandle(
 ): HTMLElement | null {
   if (handleOption === null) return null;
   if (handleOption === undefined) return element;
-  if (typeof handleOption === 'string') {
-    return element.querySelector<HTMLElement>(handleOption);
-  }
+  if (typeof handleOption === 'string') return element.querySelector<HTMLElement>(handleOption);
   return handleOption;
 }
 
 function resolveEnabledHandles(option: NonNullable<FreedomWindowOptions['resizable']>): ResizeHandle[] {
   if (option === false) return [];
   if (option === true) return [...ALL_HANDLES];
-  return option;
+  return normalizeResizeHandles(option);
+}
+
+function normalizeResizeHandles(handles: readonly ResizeHandle[]): ResizeHandle[] {
+  const unique = new Set<ResizeHandle>();
+
+  for (const handle of handles) {
+    if (!ALL_HANDLES.includes(handle)) {
+      throw new TypeError(`freedom.window(): invalid resize handle "${String(handle)}".`);
+    }
+    unique.add(handle);
+  }
+
+  return [...unique];
 }

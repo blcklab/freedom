@@ -7,18 +7,31 @@
  * (unavoidably triggers layout, but only while actively resizing).
  */
 
-import type { Point, Size } from '../core/types';
+import type { Point, PositioningMode, Size } from '../core/types';
 
-export function applyBaseStyles(element: HTMLElement): void {
+export interface BaseStyleOptions {
+  positioning: PositioningMode;
+  forcePositioning?: boolean;
+}
+
+export function applyBaseStyles(element: HTMLElement, options: BaseStyleOptions): void {
   const style = element.style;
-  if (!style.position || style.position === 'static') {
-    style.position = 'absolute';
+
+  const computedPosition = window.getComputedStyle?.(element).position ?? style.position;
+  if (options.forcePositioning || style.position === 'static' || (!style.position && computedPosition === 'static')) {
+    style.position = options.positioning;
   }
+
+  // All logical movement is applied through transform. Keeping top/left at 0
+  // gives a stable origin and prevents stale author CSS from offsetting the
+  // controlled position.
   style.top = '0px';
   style.left = '0px';
-  style.touchAction = 'none'; // prevent the browser from scrolling/zooming on drag
-  style.willChange = 'transform';
+
+  if (!style.touchAction) style.touchAction = 'none';
+  if (!style.userSelect) style.userSelect = 'none';
   if (!style.boxSizing) style.boxSizing = 'border-box';
+  if (!style.willChange) style.willChange = 'transform';
 }
 
 export function writePosition(element: HTMLElement, point: Point): void {

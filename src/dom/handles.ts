@@ -1,24 +1,9 @@
 /**
  * dom/handles.ts
  *
- * Creates the small invisible hit-targets placed at each corner. Visual
- * styling is intentionally minimal (transparent, cursor-only) — consumers
- * are expected to skin `.freedom-resize-handle` themselves, or rely on the
- * default cursor affordance alone.
- */
-
-/**
- * dom/handles.ts
- *
- * Creates the invisible hit-targets around a window's perimeter: a small
- * square at each of the 4 corners (diagonal resize) plus a thin strip
- * along each of the 4 edges (single-axis resize), tiled so they cover the
- * full border with no gaps and no overlap. Everything inside that border
- * is left uncovered, so it remains a normal drag target.
- *
- * Visual styling is intentionally minimal (transparent, cursor-only) —
- * consumers are expected to skin `.freedom-resize-handle` themselves, or
- * rely on the default cursor affordance alone.
+ * Creates invisible resize hit-targets around a window's perimeter. Visual
+ * styling is intentionally minimal; consumers can skin the classes if they
+ * want visible handles.
  */
 
 import type { ResizeHandle } from '../core/types';
@@ -26,8 +11,6 @@ import type { ResizeHandle } from '../core/types';
 const CORNER_SIZE_PX = 14;
 const EDGE_THICKNESS_PX = 8;
 
-// Edges are inset by CORNER_SIZE_PX on their long axis so they start
-// exactly where the adjacent corners end — no dead zone, no double cover.
 const EDGE_STYLES: Record<ResizeHandle, Partial<CSSStyleDeclaration>> = {
   nw: { top: '0', left: '0', width: `${CORNER_SIZE_PX}px`, height: `${CORNER_SIZE_PX}px`, cursor: 'nwse-resize' },
   ne: { top: '0', right: '0', width: `${CORNER_SIZE_PX}px`, height: `${CORNER_SIZE_PX}px`, cursor: 'nesw-resize' },
@@ -47,7 +30,10 @@ export function createResizeHandle(handle: ResizeHandle): HTMLElement {
 
   Object.assign(el.style, {
     position: 'absolute',
+    boxSizing: 'border-box',
     touchAction: 'none',
+    userSelect: 'none',
+    pointerEvents: 'auto',
     zIndex: '1',
     ...EDGE_STYLES[handle],
   });

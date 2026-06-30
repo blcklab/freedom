@@ -1,7 +1,12 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    window: 'src/window.ts',
+    manager: 'src/manager.ts',
+    snap: 'src/snap.ts'
+  },
 
   format: ['esm', 'cjs'],
 

@@ -11,10 +11,32 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./window": {
+      "types": "./dist/window.d.ts",
+      "import": "./dist/window.js",
+      "require": "./dist/window.cjs"
+    },
+    "./manager": {
+      "types": "./dist/manager.d.ts",
+      "import": "./dist/manager.js",
+      "require": "./dist/manager.cjs"
+    },
+    "./plugins/snap": {
+      "types": "./dist/snap.d.ts",
+      "import": "./dist/snap.js",
+      "require": "./dist/snap.cjs"
+    },
+    "./snap": {
+      "types": "./dist/snap.d.ts",
+      "import": "./dist/snap.js",
+      "require": "./dist/snap.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "sideEffects": false,
   "scripts": {

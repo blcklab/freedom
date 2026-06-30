@@ -1,27 +1,21 @@
 /**
  * index.ts
  *
- * Public package entry point. Importing this file performs no DOM access
- * by itself — `freedom.window()` only touches the DOM once it's actually
- * called, which keeps the package safe to import during SSR.
+ * Minimal public package entry. Importing this file performs no DOM access by
+ * itself — `freedom.window()` only touches the DOM once it is actually called,
+ * which keeps the package safe to import during SSR.
  */
 
 import { createWindow } from './runtime/window';
-import { createManager } from './manager/manager';
-import { snapPlugin } from './plugins/snap';
 
 export const freedom = {
   window: createWindow,
-  manager: createManager,
-  plugins: {
-    snap: snapPlugin,
-  },
 };
 
 export default freedom;
 
-// Named exports for consumers who prefer `import { window } from 'freedom'`
-export { createWindow as window, createManager as manager, snapPlugin };
+export { createWindow };
+export { createWindow as window };
 
 export type {
   Point,
@@ -30,6 +24,8 @@ export type {
   Bounds,
   BoundsOption,
   ResizeHandle,
+  InitialPosition,
+  PositioningMode,
   DragEventData,
   ResizeEventData,
   WindowEventMap,
@@ -41,5 +37,3 @@ export type {
   FreedomManager,
   FreedomManagerOptions,
 } from './core/types';
-
-export type { SnapPluginOptions } from './plugins/snap';

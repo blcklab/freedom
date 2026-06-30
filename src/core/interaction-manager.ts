@@ -3,23 +3,7 @@
  *
  * The single owner of raw Pointer Events for a window. Every FreedomWindow
  * has exactly one InteractionManager, and exactly one interaction — drag OR
- * resize, never both — can be active on it at a time. This is now the ONLY
- * place in the library that calls addEventListener, setPointerCapture, or
- * releasePointerCapture. DragEngine/ResizeEngine are pure calculators that
- * never see a raw event listener.
- *
- * Responsibilities:
- *  - One delegated `pointerdown` listener on the window's root element
- *    (resize handles and the drag area are both children of it, so
- *    bubbling gives a single listener instead of one per handle).
- *  - Resolve a pointerdown target to "resize handle X", "drag area", or
- *    "neither" — resize wins ties, since a corner handle visually sits
- *    inside the draggable area too.
- *  - Window-level `pointermove` / `pointerup` / `pointercancel` listeners
- *    that exist ONLY while a gesture is active, and ignore any pointerId
- *    other than the one that started the gesture (no multi-touch chaos).
- *  - Native pointer capture so the gesture keeps tracking even if the
- *    cursor leaves the original target.
+ * resize, never both — can be active on it at a time.
  */
 
 import type { Point, ResizeHandle, DragEventData, ResizeEventData } from './types';
@@ -35,16 +19,7 @@ export interface InteractionManagerOptions {
   dragEngine: DragEngine;
   resizeEngine: ResizeEngine;
 
-  /**
-   * Resolve a pointerdown target to one of our OWN resize handles, or null.
-   * Implicitly encodes "is resizing currently enabled" — return null if
-   * resizing (or this specific handle) is disabled right now.
-   */
   resolveResizeHandle(target: EventTarget | null): ResizeHandle | null;
-  /**
-   * Whether a pointerdown target falls within the current drag area.
-   * Implicitly encodes "is dragging currently enabled".
-   */
   isDragTarget(target: EventTarget | null): boolean;
 
   onDragStart(data: DragEventData): void;
@@ -78,7 +53,7 @@ export class InteractionManager {
 
   /** Begins a drag gesture from a pointerdown event. */
   startDrag(event: PointerEvent): void {
-    if (this._active !== null) return;
+    if (this.destroyed || this._active !== null) return;
     this._active = 'drag';
     this.captureGesture(event);
     const data = this.options.dragEngine.begin(toPoint(event), event);
@@ -87,18 +62,14 @@ export class InteractionManager {
 
   /** Begins a resize gesture from a pointerdown event. */
   startResize(handle: ResizeHandle, event: PointerEvent): void {
-    if (this._active !== null) return;
+    if (this.destroyed || this._active !== null) return;
     this._active = 'resize';
     this.captureGesture(event);
     const data = this.options.resizeEngine.begin(handle, toPoint(event), event);
     this.options.onResizeStart(data);
   }
 
-  /**
-   * Aborts whatever is active, silently — no `*end` callback fires.
-   * Used when a window disables drag/resize (or is destroyed) mid-gesture,
-   * so window-level listeners don't outlive the feature being turned off.
-   */
+  /** Aborts whatever is active, silently — no `*end` callback fires. */
   cancel(): void {
     this.teardown();
   }
@@ -113,7 +84,14 @@ export class InteractionManager {
   private captureGesture(event: PointerEvent): void {
     this.activePointerId = event.pointerId;
     this.captureTarget = event.target instanceof Element ? event.target : this.options.element;
-    this.captureTarget.setPointerCapture?.(event.pointerId);
+
+    try {
+      this.captureTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Pointer capture can fail if the browser has already cancelled the
+      // pointer or the target is detached. Window-level listeners below still
+      // keep the gesture usable, so this should never crash consumers.
+    }
 
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
@@ -122,24 +100,33 @@ export class InteractionManager {
 
   private teardown(): void {
     if (this.activePointerId !== null && this.captureTarget) {
-      this.captureTarget.releasePointerCapture?.(this.activePointerId);
+      try {
+        this.captureTarget.releasePointerCapture?.(this.activePointerId);
+      } catch {
+        // Same as setPointerCapture: release may throw after cancellation or
+        // detachment. Teardown must be best-effort and safe.
+      }
     }
+
     this.activePointerId = null;
     this.captureTarget = null;
     this._active = null;
+
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
     window.removeEventListener('pointercancel', this.handlePointerUp);
   }
 
   private handlePointerDown = (event: PointerEvent): void => {
-    if (this._active !== null) return; // a gesture is already in progress — this is the line that kills the old race
-    if (event.pointerType === 'mouse' && event.button !== 0) return; // primary button only
+    if (this.destroyed || this._active !== null) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
 
-    // Resize wins ties: a corner handle visually sits inside the
-    // draggable area too, and should take the gesture over a plain drag.
+    // Resize wins ties: a resize handle may visually sit inside the draggable
+    // area, but it must start resizing, not dragging.
     const resizeHandle = this.options.resolveResizeHandle(event.target);
     if (resizeHandle) {
+      event.preventDefault();
+      event.stopPropagation();
       this.startResize(resizeHandle, event);
       return;
     }
@@ -147,12 +134,10 @@ export class InteractionManager {
     if (this.options.isDragTarget(event.target)) {
       this.startDrag(event);
     }
-    // Otherwise: pointerdown landed somewhere we don't care about (a
-    // disabled handle, or outside the drag area) — ignore it entirely.
   };
 
   private handlePointerMove = (event: PointerEvent): void => {
-    if (event.pointerId !== this.activePointerId) return;
+    if (this.destroyed || event.pointerId !== this.activePointerId) return;
 
     if (this._active === 'drag') {
       this.options.onDragMove(this.options.dragEngine.move(toPoint(event), event));
@@ -162,7 +147,7 @@ export class InteractionManager {
   };
 
   private handlePointerUp = (event: PointerEvent): void => {
-    if (event.pointerId !== this.activePointerId) return;
+    if (this.destroyed || event.pointerId !== this.activePointerId) return;
 
     if (this._active === 'drag') {
       this.options.onDragEnd(this.options.dragEngine.end(toPoint(event), event));

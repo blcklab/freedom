@@ -250,3 +250,130 @@ describe('manager/manager', () => {
     expect(manager.getFocused()).toBeNull();
   });
 });
+
+import { createWindow } from '../src/runtime/window';
+
+class FakeHTMLElement extends FakeEventTarget {
+  nodeType = 1;
+  style: Record<string, string> = {};
+  classList = {
+    add: (..._tokens: string[]) => {},
+    remove: (..._tokens: string[]) => {},
+  };
+  dataset: Record<string, string> = {};
+  offsetLeft = 0;
+  offsetTop = 0;
+  offsetWidth = 0;
+  offsetHeight = 0;
+  clientWidth = 0;
+  clientHeight = 0;
+  offsetParent: FakeHTMLElement | null = null;
+  children: FakeHTMLElement[] = [];
+
+  constructor(private rect = { width: 0, height: 0 }) {
+    super();
+  }
+
+  getBoundingClientRect() {
+    return this.rect;
+  }
+
+  appendChild(child: FakeHTMLElement): FakeHTMLElement {
+    this.children.push(child);
+    return child;
+  }
+
+  querySelector(): FakeHTMLElement | null {
+    return null;
+  }
+
+  contains(target: unknown): boolean {
+    return target === this || this.children.includes(target as FakeHTMLElement);
+  }
+
+  closest(): FakeHTMLElement | null {
+    return null;
+  }
+
+  remove(): void {}
+}
+
+function installRuntimeDom() {
+  const fakeWindow = new FakeEventTarget() as any;
+  fakeWindow.innerWidth = 1000;
+  fakeWindow.innerHeight = 700;
+  fakeWindow.getComputedStyle = (element: FakeHTMLElement) => ({
+    position: element.style.position || 'static',
+    visibility: element.style.visibility || 'visible',
+  });
+
+  (globalThis as any).window = fakeWindow;
+  (globalThis as any).document = {
+    documentElement: { clientWidth: 1000, clientHeight: 700 },
+    createElement: () => new FakeHTMLElement(),
+  };
+  (globalThis as any).Node = FakeHTMLElement;
+  (globalThis as any).Element = FakeHTMLElement;
+}
+
+describe('runtime/window initialization', () => {
+  beforeEach(() => {
+    installRuntimeDom();
+  });
+
+  it('centers synchronously without a top-left first paint', () => {
+    const element = new FakeHTMLElement({ width: 500, height: 300 }) as unknown as HTMLElement;
+
+    const win = createWindow(element, {
+      initialPosition: 'center',
+      resizable: false,
+    });
+
+    expect(element.style.position).toBe('fixed');
+    expect(element.style.top).toBe('0px');
+    expect(element.style.left).toBe('0px');
+    expect(element.style.width).toBe('500px');
+    expect(element.style.height).toBe('300px');
+    expect(element.style.transform).toBe('translate3d(250px, 200px, 0)');
+    expect(win.getPosition()).toEqual({ x: 250, y: 200 });
+  });
+
+  it('uses custom initial position synchronously', () => {
+    const element = new FakeHTMLElement({ width: 400, height: 240 }) as unknown as HTMLElement;
+
+    createWindow(element, {
+      initialPosition: { x: 40, y: 80 },
+      initialSize: { width: 400, height: 240 },
+      resizable: false,
+    });
+
+    expect(element.style.transform).toBe('translate3d(40px, 80px, 0)');
+    expect(element.style.width).toBe('400px');
+    expect(element.style.height).toBe('240px');
+  });
+
+  it('supports the hidden-until-initialized zero-flicker CSS pattern', () => {
+    const element = new FakeHTMLElement({ width: 300, height: 200 }) as unknown as HTMLElement;
+    element.style.visibility = 'hidden';
+
+    createWindow(element, {
+      initialPosition: 'center',
+      resizable: false,
+    });
+
+    expect(element.style.visibility).toBe('visible');
+    expect(element.style.transform).toBe('translate3d(350px, 250px, 0)');
+  });
+
+  it('throws clear errors for invalid elements, duplicate instances, and destroyed instances', () => {
+    expect(() => createWindow(null as unknown as HTMLElement)).toThrow(/expected a real HTMLElement/i);
+
+    const element = new FakeHTMLElement({ width: 100, height: 100 }) as unknown as HTMLElement;
+    const win = createWindow(element, { resizable: false });
+
+    expect(() => createWindow(element, { resizable: false })).toThrow(/more than once/i);
+
+    win.destroy();
+    expect(() => win.setPosition({ x: 1, y: 1 })).toThrow(/destroyed/i);
+  });
+});

@@ -40,6 +40,12 @@ export type BoundsOption = 'none' | 'viewport' | 'parent' | Rect;
 
 export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
+/** Initial window position. `'center'` centers inside the viewport by default. */
+export type InitialPosition = Point | 'center';
+
+/** CSS positioning mode used by the managed element. */
+export type PositioningMode = 'absolute' | 'fixed';
+
 // ---------------------------------------------------------------------------
 // Interaction event payloads
 // ---------------------------------------------------------------------------
@@ -109,8 +115,24 @@ export interface FreedomWindowOptions {
   /** Stable identifier. Auto-generated if omitted. */
   id?: string;
 
-  initialPosition?: Point;
+  /** `{ x, y }` or `'center'`. Default: element's current rendered offset. */
+  initialPosition?: InitialPosition;
   initialSize?: Size;
+
+  /**
+   * CSS positioning mode. If omitted, the current non-static position is kept.
+   * Static elements become `absolute`, except centered viewport windows use
+   * `fixed` for predictable overlay behavior.
+   */
+  positioning?: PositioningMode;
+
+  /**
+   * When true, an element that starts as `visibility: hidden` is revealed after
+   * freeDOM has synchronously written its initial position/size. This enables a
+   * zero-flicker CSS pattern without forcing consumers to manually reveal.
+   * Default: true.
+   */
+  autoReveal?: boolean;
 
   minWidth?: number;
   minHeight?: number;
