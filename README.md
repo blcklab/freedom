@@ -5,6 +5,7 @@ A lightweight, framework-agnostic TypeScript library for draggable and resizable
 - Draggable windows
 - Optional resizing from edges and corners
 - Safe first-render positioning, including centered windows
+- Position-agnostic initialization: CSS `top/right`, `bottom/left`, `absolute`, `fixed`, `relative`, and normal-flow elements can be used as the starting point
 - Zero runtime dependencies
 - Pointer Events support: mouse, touch, and pen
 - Works with any framework or vanilla JavaScript
@@ -114,18 +115,41 @@ freedom.window(element, {
 })
 ```
 
-## Positioning mode
+## Position-agnostic initialization
 
-By default, static elements become `absolute`. Centered viewport windows become `fixed` so overlays center predictably.
+freeDOM does not require your CSS to use `top` and `left`. It can start from CSS such as `top/right`, `bottom/left`, an existing `fixed` or `absolute` panel, or even a normal-flow element. During initialization it reads the current rendered location, normalizes the managed window, and then uses transform deltas for smooth movement.
 
-You can force a mode when needed:
+This works:
+
+```css
+.my-window {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+```
+
+```ts
+const win = freedom.window(element, {
+  dragHandle: '.header',
+  resizable: true
+})
+
+console.log(win.getPosition()) // the real visual x/y after CSS is resolved
+```
+
+Normal-flow elements are preserved by switching them to `position: relative` and moving with transform deltas, so the library does not need to force everything to `top: 0; left: 0`.
+
+You can still force a mode when needed:
 
 ```ts
 freedom.window(element, {
-  positioning: 'fixed',
+  positioning: 'fixed', // 'fixed' | 'absolute' | 'relative'
   initialPosition: 'center'
 })
 ```
+
+Available modes are `fixed`, `absolute`, and `relative`.
 
 ## Public imports
 
@@ -185,7 +209,7 @@ freedom.window(element, {
   initialPosition: 'center',
   initialSize: { width: 500, height: 320 },
 
-  positioning: 'fixed',
+  positioning: 'fixed', // 'fixed' | 'absolute' | 'relative'
   autoReveal: true,
 
   minWidth: 200,
@@ -208,6 +232,7 @@ Modern browsers supporting the Pointer Events API.
 - Creating a window must happen in the browser.
 - freeDOM does not inject global CSS.
 - Runtime styles are applied only to the controlled element and generated resize handles.
+- Existing CSS positioning can be used as the initial source of truth; after initialization, freeDOM owns the managed position.
 - Resize handles win over dragging, so resizing does not accidentally start a drag.
 
 ## License

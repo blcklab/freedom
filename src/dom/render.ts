@@ -1,10 +1,11 @@
 /**
  * dom/render.ts
  *
- * The ONLY functions in the library allowed to write to element.style for
- * position/size. Position is painted via `transform: translate3d(...)`
- * (compositor-only, no layout/reflow) while size uses width/height
- * (unavoidably triggers layout, but only while actively resizing).
+ * The only module that writes position/size styles. The renderer is
+ * position-agnostic at the input boundary: it can start from CSS top/left,
+ * top/right, bottom/left, fixed, absolute, relative, or normal flow. During
+ * initialization runtime/window normalizes absolute/fixed windows to a stable
+ * top-left base, then uses transform deltas for fast movement.
  */
 
 import type { Point, PositioningMode, Size } from '../core/types';
@@ -14,19 +15,24 @@ export interface BaseStyleOptions {
   forcePositioning?: boolean;
 }
 
+export interface PositionRenderer {
+  /** CSS positioning mode used by the element. */
+  positioning: PositioningMode;
+  /** Logical coordinate where a zero transform renders the element. */
+  origin: Point;
+  /** Any inline transform that existed before freeDOM took control. */
+  baseTransform: string;
+  /** Relative windows stay in normal flow and move only by transform. */
+  flowRelative: boolean;
+}
+
 export function applyBaseStyles(element: HTMLElement, options: BaseStyleOptions): void {
   const style = element.style;
-
   const computedPosition = window.getComputedStyle?.(element).position ?? style.position;
-  if (options.forcePositioning || style.position === 'static' || (!style.position && computedPosition === 'static')) {
+
+  if (options.forcePositioning || computedPosition === 'static') {
     style.position = options.positioning;
   }
-
-  // All logical movement is applied through transform. Keeping top/left at 0
-  // gives a stable origin and prevents stale author CSS from offsetting the
-  // controlled position.
-  style.top = '0px';
-  style.left = '0px';
 
   if (!style.touchAction) style.touchAction = 'none';
   if (!style.userSelect) style.userSelect = 'none';
@@ -34,11 +40,87 @@ export function applyBaseStyles(element: HTMLElement, options: BaseStyleOptions)
   if (!style.willChange) style.willChange = 'transform';
 }
 
-export function writePosition(element: HTMLElement, point: Point): void {
-  element.style.transform = `translate3d(${point.x}px, ${point.y}px, 0)`;
+export function readRenderedPosition(element: HTMLElement, positioning: PositioningMode): Point {
+  const rect = element.getBoundingClientRect();
+
+  if (positioning === 'fixed') {
+    return { x: rect.left || 0, y: rect.top || 0 };
+  }
+
+  if (positioning === 'absolute') {
+    const parent = element.offsetParent as HTMLElement | null;
+
+    if (parent) {
+      const parentRect = parent.getBoundingClientRect();
+      return {
+        x: (rect.left || 0) - (parentRect.left || 0) + (parent.scrollLeft || 0),
+        y: (rect.top || 0) - (parentRect.top || 0) + (parent.scrollTop || 0),
+      };
+    }
+
+    return {
+      x: (rect.left || 0) + (window.scrollX || 0),
+      y: (rect.top || 0) + (window.scrollY || 0),
+    };
+  }
+
+  // Relative windows keep their normal-flow layout as the base. Their logical
+  // position is still expressed in viewport coordinates so getPosition() is
+  // meaningful, but writes are translated relative to this original location.
+  return { x: rect.left || 0, y: rect.top || 0 };
+}
+
+export function createPositionRenderer(
+  element: HTMLElement,
+  positioning: PositioningMode,
+  initialPosition: Point
+): PositionRenderer {
+  const baseTransform = normalizeTransform(element.style.transform);
+
+  if (positioning === 'relative') {
+    return {
+      positioning,
+      origin: readRenderedPosition(element, positioning),
+      baseTransform,
+      flowRelative: true,
+    };
+  }
+
+  // Absolute/fixed windows may begin life with top/right, bottom/left, or CSS
+  // authored elsewhere. Normalize that visual coordinate to top/left once so
+  // resizing remains stable regardless of the author's original anchor.
+  element.style.left = `${initialPosition.x}px`;
+  element.style.top = `${initialPosition.y}px`;
+  element.style.right = 'auto';
+  element.style.bottom = 'auto';
+
+  return {
+    positioning,
+    origin: { ...initialPosition },
+    baseTransform: '',
+    flowRelative: false,
+  };
+}
+
+export function writePosition(element: HTMLElement, point: Point, renderer: PositionRenderer): void {
+  const dx = point.x - renderer.origin.x;
+  const dy = point.y - renderer.origin.y;
+  const translate = dx === 0 && dy === 0 ? '' : `translate3d(${dx}px, ${dy}px, 0)`;
+  element.style.transform = joinTransforms(renderer.baseTransform, translate);
 }
 
 export function writeSize(element: HTMLElement, size: Size): void {
   element.style.width = `${size.width}px`;
   element.style.height = `${size.height}px`;
+}
+
+function normalizeTransform(value: string | undefined): string {
+  if (!value || value === 'none') return '';
+  return value.trim();
+}
+
+function joinTransforms(base: string, translate: string): string {
+  if (base && translate) return `${base} ${translate}`;
+  if (base) return base;
+  return translate;
 }

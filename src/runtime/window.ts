@@ -25,7 +25,13 @@ import { clampSize, type SizeLimits } from '../core/math';
 import { createDragEngine } from '../engine/drag';
 import { createResizeEngine } from '../engine/resize';
 import { createInteractionManager } from '../core/interaction-manager';
-import { applyBaseStyles, writePosition, writeSize } from '../dom/render';
+import {
+  applyBaseStyles,
+  createPositionRenderer,
+  readRenderedPosition,
+  writePosition,
+  writeSize,
+} from '../dom/render';
 import { createResizeHandle } from '../dom/handles';
 import { createFrameScheduler } from '../dom/scheduler';
 
@@ -51,23 +57,24 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   const limits = normalizeSizeLimits(options);
   const positioning = resolvePositioning(element, options);
 
-  // The order matters: apply stable positioning first, resolve size second,
-  // resolve position third. This lets `initialPosition: 'center'` use the real
-  // initial size and avoids one-frame jumps.
+  // The order matters: choose/apply a positioning context first, measure the
+  // rendered box second, resolve initial geometry third, then create a renderer
+  // that can preserve CSS-origin layouts while still moving with transforms.
   applyBaseStyles(element, {
     positioning,
-    forcePositioning: shouldForcePositioning(options, positioning),
+    forcePositioning: shouldForcePositioning(element, options),
   });
 
   let size: Size = clampSize(sanitizeSize(options.initialSize ?? readInitialSize(element), 'initialSize'), limits);
   let position: Point = resolveInitialPosition(options.initialPosition, element, size, options.bounds, positioning);
+  const renderer = createPositionRenderer(element, positioning, position);
   let zIndex = normalizeZIndex(options.zIndex ?? 0);
   let focused = false;
   let isDraggable = options.draggable ?? true;
   let isDestroyed = false;
 
   writeSize(element, size);
-  writePosition(element, position);
+  writePosition(element, position, renderer);
   if (zIndex) element.style.zIndex = String(zIndex);
   revealIfRequested(element, options);
 
@@ -79,7 +86,7 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     if (isDestroyed) return;
 
     if (pendingPosition) {
-      writePosition(element, pendingPosition);
+      writePosition(element, pendingPosition, renderer);
       pendingPosition = null;
     }
     if (pendingSize) {
@@ -395,17 +402,33 @@ function sanitizeSize(size: Size, source: string): Size {
   return { width: Math.max(0, size.width), height: Math.max(0, size.height) };
 }
 
-function shouldForcePositioning(options: FreedomWindowOptions, positioning: PositioningMode): boolean {
-  return Boolean(options.positioning) || (options.initialPosition === 'center' && positioning === 'fixed');
+function shouldForcePositioning(element: HTMLElement, options: FreedomWindowOptions): boolean {
+  const computed = window.getComputedStyle(element).position;
+  return Boolean(options.positioning) || computed === 'static';
 }
 
 function resolvePositioning(element: HTMLElement, options: FreedomWindowOptions): PositioningMode {
   if (options.positioning) return options.positioning;
 
-  const computedPosition = window.getComputedStyle(element).position;
-  if (computedPosition === 'fixed') return 'fixed';
-  if (options.initialPosition === 'center' && (!options.bounds || options.bounds === 'viewport')) return 'fixed';
-  return 'absolute';
+  const computed = window.getComputedStyle(element);
+  if (computed.position === 'fixed') return 'fixed';
+  if (computed.position === 'absolute') return 'absolute';
+  if (computed.position === 'relative' || computed.position === 'sticky') return 'relative';
+
+  if (hasAuthoredInset(computed)) return 'fixed';
+
+  if (options.initialPosition !== undefined) {
+    return options.bounds === 'parent' ? 'absolute' : 'fixed';
+  }
+
+  return 'relative';
+}
+
+function hasAuthoredInset(style: CSSStyleDeclaration): boolean {
+  return [style.top, style.right, style.bottom, style.left].some((value) => {
+    if (!value || value === 'auto') return false;
+    return value !== '0px' && value !== '0';
+  });
 }
 
 function resolveInitialPosition(
@@ -423,7 +446,7 @@ function resolveInitialPosition(
     return sanitizePoint(initialPosition, 'initialPosition');
   }
 
-  return readInitialPosition(element);
+  return readRenderedPosition(element, positioning);
 }
 
 function centerPosition(
@@ -468,12 +491,6 @@ function resolveCenterBox(
   };
 }
 
-function readInitialPosition(element: HTMLElement): Point {
-  return {
-    x: element.offsetLeft || 0,
-    y: element.offsetTop || 0,
-  };
-}
 
 function readInitialSize(element: HTMLElement): Size {
   const rect = element.getBoundingClientRect();

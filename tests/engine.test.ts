@@ -270,7 +270,7 @@ class FakeHTMLElement extends FakeEventTarget {
   offsetParent: FakeHTMLElement | null = null;
   children: FakeHTMLElement[] = [];
 
-  constructor(private rect = { width: 0, height: 0 }) {
+  constructor(private rect = { left: 0, top: 0, width: 0, height: 0 }) {
     super();
   }
 
@@ -302,10 +302,21 @@ function installRuntimeDom() {
   const fakeWindow = new FakeEventTarget() as any;
   fakeWindow.innerWidth = 1000;
   fakeWindow.innerHeight = 700;
+  fakeWindow.scrollX = 0;
+  fakeWindow.scrollY = 0;
+  fakeWindow.requestAnimationFrame = (callback: FrameRequestCallback) => { callback(0); return 1; };
+  fakeWindow.cancelAnimationFrame = () => {};
   fakeWindow.getComputedStyle = (element: FakeHTMLElement) => ({
     position: element.style.position || 'static',
     visibility: element.style.visibility || 'visible',
+    top: element.style.top || 'auto',
+    right: element.style.right || 'auto',
+    bottom: element.style.bottom || 'auto',
+    left: element.style.left || 'auto',
   });
+
+  (globalThis as any).requestAnimationFrame = fakeWindow.requestAnimationFrame;
+  (globalThis as any).cancelAnimationFrame = fakeWindow.cancelAnimationFrame;
 
   (globalThis as any).window = fakeWindow;
   (globalThis as any).document = {
@@ -322,7 +333,7 @@ describe('runtime/window initialization', () => {
   });
 
   it('centers synchronously without a top-left first paint', () => {
-    const element = new FakeHTMLElement({ width: 500, height: 300 }) as unknown as HTMLElement;
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 500, height: 300 }) as unknown as HTMLElement;
 
     const win = createWindow(element, {
       initialPosition: 'center',
@@ -330,16 +341,18 @@ describe('runtime/window initialization', () => {
     });
 
     expect(element.style.position).toBe('fixed');
-    expect(element.style.top).toBe('0px');
-    expect(element.style.left).toBe('0px');
+    expect(element.style.top).toBe('200px');
+    expect(element.style.left).toBe('250px');
+    expect(element.style.right).toBe('auto');
+    expect(element.style.bottom).toBe('auto');
     expect(element.style.width).toBe('500px');
     expect(element.style.height).toBe('300px');
-    expect(element.style.transform).toBe('translate3d(250px, 200px, 0)');
+    expect(element.style.transform).toBe('');
     expect(win.getPosition()).toEqual({ x: 250, y: 200 });
   });
 
   it('uses custom initial position synchronously', () => {
-    const element = new FakeHTMLElement({ width: 400, height: 240 }) as unknown as HTMLElement;
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 400, height: 240 }) as unknown as HTMLElement;
 
     createWindow(element, {
       initialPosition: { x: 40, y: 80 },
@@ -347,13 +360,16 @@ describe('runtime/window initialization', () => {
       resizable: false,
     });
 
-    expect(element.style.transform).toBe('translate3d(40px, 80px, 0)');
+    expect(element.style.position).toBe('fixed');
+    expect(element.style.left).toBe('40px');
+    expect(element.style.top).toBe('80px');
+    expect(element.style.transform).toBe('');
     expect(element.style.width).toBe('400px');
     expect(element.style.height).toBe('240px');
   });
 
   it('supports the hidden-until-initialized zero-flicker CSS pattern', () => {
-    const element = new FakeHTMLElement({ width: 300, height: 200 }) as unknown as HTMLElement;
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 300, height: 200 }) as unknown as HTMLElement;
     element.style.visibility = 'hidden';
 
     createWindow(element, {
@@ -362,13 +378,50 @@ describe('runtime/window initialization', () => {
     });
 
     expect(element.style.visibility).toBe('visible');
-    expect(element.style.transform).toBe('translate3d(350px, 250px, 0)');
+    expect(element.style.left).toBe('350px');
+    expect(element.style.top).toBe('250px');
+    expect(element.style.transform).toBe('');
+  });
+
+
+
+  it('normalizes fixed top/right CSS without assuming top-left input', () => {
+    const element = new FakeHTMLElement({ left: 580, top: 20, width: 400, height: 240 }) as unknown as HTMLElement;
+    element.style.position = 'fixed';
+    element.style.top = '20px';
+    element.style.right = '20px';
+
+    const win = createWindow(element, { resizable: false });
+
+    expect(element.style.position).toBe('fixed');
+    expect(element.style.left).toBe('580px');
+    expect(element.style.top).toBe('20px');
+    expect(element.style.right).toBe('auto');
+    expect(element.style.bottom).toBe('auto');
+    expect(element.style.transform).toBe('');
+    expect(win.getPosition()).toEqual({ x: 580, y: 20 });
+  });
+
+  it('keeps normal-flow elements position agnostic by using relative + transform deltas', () => {
+    const element = new FakeHTMLElement({ left: 120, top: 80, width: 300, height: 200 }) as unknown as HTMLElement;
+
+    const win = createWindow(element, { resizable: false });
+
+    expect(element.style.position).toBe('relative');
+    expect(element.style.left).toBeUndefined();
+    expect(element.style.top).toBeUndefined();
+    expect(element.style.transform).toBe('');
+    expect(win.getPosition()).toEqual({ x: 120, y: 80 });
+
+    win.setPosition({ x: 150, y: 130 });
+    expect(element.style.transform).toBe('translate3d(30px, 50px, 0)');
+    expect(win.getPosition()).toEqual({ x: 150, y: 130 });
   });
 
   it('throws clear errors for invalid elements, duplicate instances, and destroyed instances', () => {
     expect(() => createWindow(null as unknown as HTMLElement)).toThrow(/expected a real HTMLElement/i);
 
-    const element = new FakeHTMLElement({ width: 100, height: 100 }) as unknown as HTMLElement;
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 100, height: 100 }) as unknown as HTMLElement;
     const win = createWindow(element, { resizable: false });
 
     expect(() => createWindow(element, { resizable: false })).toThrow(/more than once/i);

@@ -44,7 +44,7 @@ export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 export type InitialPosition = Point | 'center';
 
 /** CSS positioning mode used by the managed element. */
-export type PositioningMode = 'absolute' | 'fixed';
+export type PositioningMode = 'absolute' | 'fixed' | 'relative';
 
 // ---------------------------------------------------------------------------
 // Interaction event payloads
@@ -121,8 +121,10 @@ export interface FreedomWindowOptions {
 
   /**
    * CSS positioning mode. If omitted, the current non-static position is kept.
-   * Static elements become `absolute`, except centered viewport windows use
-   * `fixed` for predictable overlay behavior.
+   * Static elements become `relative` when no explicit initial position is
+   * provided, so normal document flow is preserved. When `initialPosition` is
+   * provided, static elements become `fixed` by default for predictable overlay
+   * behavior unless `bounds: 'parent'` or `positioning: 'absolute'` is used.
    */
   positioning?: PositioningMode;
 
