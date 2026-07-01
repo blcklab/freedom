@@ -1,10 +1,3 @@
-/**
- * core/events.ts
- *
- * Minimal, dependency-free, strongly-typed event emitter.
- * Shared by runtime/window.ts and manager/manager.ts.
- */
-
 type Handler<T> = (data: T) => void;
 
 export class Emitter<EventMap extends object> {
@@ -27,7 +20,8 @@ export class Emitter<EventMap extends object> {
   emit<K extends keyof EventMap>(event: K, data: EventMap[K]): void {
     const set = this.listeners.get(event);
     if (!set || set.size === 0) return;
-    // Copy before iterating: a handler may unsubscribe itself mid-emit.
+
+    // Snapshot so listeners can unsubscribe during emit.
     for (const handler of [...set]) {
       (handler as Handler<EventMap[K]>)(data);
     }

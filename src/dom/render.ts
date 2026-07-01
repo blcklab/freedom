@@ -1,13 +1,3 @@
-/**
- * dom/render.ts
- *
- * The only module that writes position/size styles. The renderer is
- * position-agnostic at the input boundary: it can start from CSS top/left,
- * top/right, bottom/left, fixed, absolute, relative, or normal flow. During
- * initialization runtime/window normalizes absolute/fixed windows to a stable
- * top-left base, then uses transform deltas for fast movement.
- */
-
 import type { Point, PositioningMode, Size } from '../core/types';
 
 export interface BaseStyleOptions {
@@ -16,14 +6,10 @@ export interface BaseStyleOptions {
 }
 
 export interface PositionRenderer {
-  /** CSS positioning mode used by the element. */
-  positioning: PositioningMode;
-  /** Logical coordinate where a zero transform renders the element. */
-  origin: Point;
-  /** Any inline transform that existed before freeDOM took control. */
-  baseTransform: string;
-  /** Relative windows stay in normal flow and move only by transform. */
-  flowRelative: boolean;
+    positioning: PositioningMode;
+    origin: Point;
+    baseTransform: string;
+    flowRelative: boolean;
 }
 
 export function applyBaseStyles(element: HTMLElement, options: BaseStyleOptions): void {
@@ -64,9 +50,7 @@ export function readRenderedPosition(element: HTMLElement, positioning: Position
     };
   }
 
-  // Relative windows keep their normal-flow layout as the base. Their logical
-  // position is still expressed in viewport coordinates so getPosition() is
-  // meaningful, but writes are translated relative to this original location.
+  // Normal-flow windows move relative to their original rendered position.
   return { x: rect.left || 0, y: rect.top || 0 };
 }
 
@@ -86,9 +70,7 @@ export function createPositionRenderer(
     };
   }
 
-  // Absolute/fixed windows may begin life with top/right, bottom/left, or CSS
-  // authored elsewhere. Normalize that visual coordinate to top/left once so
-  // resizing remains stable regardless of the author's original anchor.
+  // Normalize right/bottom anchored CSS to left/top once for stable resizing.
   element.style.left = `${initialPosition.x}px`;
   element.style.top = `${initialPosition.y}px`;
   element.style.right = 'auto';

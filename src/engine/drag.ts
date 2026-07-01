@@ -1,14 +1,3 @@
-/**
- * engine/drag.ts
- *
- * Pure interaction logic for dragging: converts raw pointer movement into
- * a next `Point`, applying bounds and plugin transforms in order. Contains
- * no DOM writes and no DOM listeners — it's driven entirely by
- * InteractionManager, which feeds it pointer coordinates and consumes the
- * geometry it calculates back. begin()/move()/end() map 1:1 onto
- * pointerdown/pointermove/pointerup.
- */
-
 import type {
   BoundsOption,
   DragEventData,
@@ -34,12 +23,9 @@ export interface DragMoveResult {
 }
 
 export interface DragEngine {
-  /** Call once, on pointerdown, before any move(). Returns the dragstart payload. */
-  begin(pointer: Point, pointerEvent: PointerEvent): DragEventData;
-  /** Call on every pointermove while dragging. */
-  move(pointer: Point, pointerEvent: PointerEvent): DragMoveResult;
-  /** Call once, on pointerup/pointercancel. Returns the dragend payload. */
-  end(pointer: Point, pointerEvent: PointerEvent): DragEventData;
+    begin(pointer: Point, pointerEvent: PointerEvent): DragEventData;
+    move(pointer: Point, pointerEvent: PointerEvent): DragMoveResult;
+    end(pointer: Point, pointerEvent: PointerEvent): DragEventData;
 }
 
 export function createDragEngine(options: DragEngineOptions): DragEngine {

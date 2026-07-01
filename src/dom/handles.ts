@@ -1,11 +1,3 @@
-/**
- * dom/handles.ts
- *
- * Creates invisible resize hit-targets around a window's perimeter. Visual
- * styling is intentionally minimal; consumers can skin the classes if they
- * want visible handles.
- */
-
 import type { ResizeHandle } from '../core/types';
 
 const CORNER_SIZE_PX = 14;

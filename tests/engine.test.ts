@@ -1,11 +1,3 @@
-/**
- * tests/engine.test.ts
- *
- * Same coverage as the original hand-rolled smoke test, ported to vitest.
- * Uses a minimal fake EventTarget instead of jsdom — the engines only need
- * addEventListener/removeEventListener, not a full DOM.
- */
-
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createDragEngine } from '../src/engine/drag';
 import { createResizeEngine } from '../src/engine/resize';
@@ -84,7 +76,7 @@ describe('engine/drag', () => {
     });
 
     engine.begin({ x: 50, y: 50 }, {} as PointerEvent);
-    const result = engine.move({ x: 80, y: 40 }, {} as PointerEvent); // delta (+30, -10)
+    const result = engine.move({ x: 80, y: 40 }, {} as PointerEvent);
     position = result.position;
 
     expect(position).toEqual({ x: 130, y: 90 });
@@ -382,8 +374,6 @@ describe('runtime/window initialization', () => {
     expect(element.style.top).toBe('250px');
     expect(element.style.transform).toBe('');
   });
-
-
 
   it('normalizes fixed top/right CSS without assuming top-left input', () => {
     const element = new FakeHTMLElement({ left: 580, top: 20, width: 400, height: 240 }) as unknown as HTMLElement;

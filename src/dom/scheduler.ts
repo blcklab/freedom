@@ -1,11 +1,3 @@
-/**
- * dom/scheduler.ts
- *
- * Batches DOM writes to one per animation frame. Pointermove can fire
- * faster than the display refresh rate; without batching, fast mice cause
- * redundant style writes that the browser then has to discard anyway.
- */
-
 export interface FrameScheduler {
   schedule(): void;
   cancel(): void;

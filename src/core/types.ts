@@ -1,14 +1,3 @@
-/**
- * core/types.ts
- *
- * Single source of truth for every public and internal type in the library.
- * No DOM side effects live here — this file is pure data shapes.
- */
-
-// ---------------------------------------------------------------------------
-// Primitive geometry
-// ---------------------------------------------------------------------------
-
 export interface Point {
   x: number;
   y: number;
@@ -21,7 +10,6 @@ export interface Size {
 
 export interface Rect extends Point, Size {}
 
-/** Axis-aligned box expressed as min/max edges, used for clamping. */
 export interface Bounds {
   minX: number;
   minY: number;
@@ -29,32 +17,17 @@ export interface Bounds {
   maxY: number;
 }
 
-/**
- * How a window's movement/size should be constrained.
- * - 'none'      -> unconstrained (default)
- * - 'viewport'  -> clamped to the browser viewport
- * - 'parent'    -> clamped to the element's offsetParent
- * - Rect        -> clamped to an explicit, caller-supplied box
- */
 export type BoundsOption = 'none' | 'viewport' | 'parent' | Rect;
 
 export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
-/** Initial window position. `'center'` centers inside the viewport by default. */
 export type InitialPosition = Point | 'center';
 
-/** CSS positioning mode used by the managed element. */
 export type PositioningMode = 'absolute' | 'fixed' | 'relative';
 
-// ---------------------------------------------------------------------------
-// Interaction event payloads
-// ---------------------------------------------------------------------------
-
 export interface DragEventData {
-  /** Logical position after this update (already bounds/plugin-resolved). */
-  position: Point;
-  /** Cumulative pointer delta since drag start. */
-  delta: Point;
+    position: Point;
+    delta: Point;
   pointerEvent: PointerEvent;
 }
 
@@ -84,16 +57,6 @@ export interface ManagerEventMap {
   blur: FreedomWindow;
 }
 
-// ---------------------------------------------------------------------------
-// Plugins
-// ---------------------------------------------------------------------------
-
-/**
- * Plugins observe and may transform geometry before it is committed/painted.
- * Returning a value overrides the proposed geometry for that frame;
- * returning void/undefined leaves it untouched. Plugins must stay pure and
- * fast — they run synchronously inside the pointermove hot path.
- */
 export interface FreedomPlugin {
   readonly name: string;
   onInit?(ctx: PluginContext): void;
@@ -107,58 +70,26 @@ export interface PluginContext {
   readonly element: HTMLElement;
 }
 
-// ---------------------------------------------------------------------------
-// Window
-// ---------------------------------------------------------------------------
-
 export interface FreedomWindowOptions {
-  /** Stable identifier. Auto-generated if omitted. */
-  id?: string;
+    id?: string;
 
-  /** `{ x, y }` or `'center'`. Default: element's current rendered offset. */
-  initialPosition?: InitialPosition;
+    initialPosition?: InitialPosition;
   initialSize?: Size;
 
-  /**
-   * CSS positioning mode. If omitted, the current non-static position is kept.
-   * Static elements become `relative` when no explicit initial position is
-   * provided, so normal document flow is preserved. When `initialPosition` is
-   * provided, static elements become `fixed` by default for predictable overlay
-   * behavior unless `bounds: 'parent'` or `positioning: 'absolute'` is used.
-   */
-  positioning?: PositioningMode;
+    positioning?: PositioningMode;
 
-  /**
-   * When true, an element that starts as `visibility: hidden` is revealed after
-   * freeDOM has synchronously written its initial position/size. This enables a
-   * zero-flicker CSS pattern without forcing consumers to manually reveal.
-   * Default: true.
-   */
-  autoReveal?: boolean;
+    autoReveal?: boolean;
 
   minWidth?: number;
   minHeight?: number;
   maxWidth?: number;
   maxHeight?: number;
 
-  /** Enables/disables dragging entirely. Default: true. */
-  draggable?: boolean;
+    draggable?: boolean;
 
-  /**
-   * Which handles can resize the window.
-   * `true` = all eight handles, `false` = none, or an explicit subset.
-   * Default: true.
-   */
-  resizable?: boolean | ResizeHandle[];
+    resizable?: boolean | ResizeHandle[];
 
-  /**
-   * Restricts dragging to a specific sub-element (e.g. a title bar).
-   * - undefined -> the whole element is draggable
-   * - string    -> CSS selector resolved against the element
-   * - HTMLElement -> used directly
-   * - null      -> dragging disabled regardless of `draggable`
-   */
-  dragHandle?: string | HTMLElement | null;
+    dragHandle?: string | HTMLElement | null;
 
   bounds?: BoundsOption;
 
@@ -205,23 +136,16 @@ export interface FreedomWindow {
   ): () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Manager
-// ---------------------------------------------------------------------------
-
 export interface FreedomManagerOptions {
-  /** z-index assigned to the first registered window. Default: 1. */
-  baseZIndex?: number;
+    baseZIndex?: number;
 }
 
 export interface FreedomManager {
   register(win: FreedomWindow): void;
   unregister(win: FreedomWindow): void;
 
-  /** Brings a window to the front and marks it focused, blurring the rest. */
-  focus(win: FreedomWindow): void;
-  /** Alias of `focus` for readability at call sites. */
-  bringToFront(win: FreedomWindow): void;
+    focus(win: FreedomWindow): void;
+    bringToFront(win: FreedomWindow): void;
 
   getFocused(): FreedomWindow | null;
   list(): FreedomWindow[];
