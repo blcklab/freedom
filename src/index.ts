@@ -1,11 +1,3 @@
-/**
- * index.ts
- *
- * Minimal public package entry. Importing this file performs no DOM access by
- * itself — `freedom.window()` only touches the DOM once it is actually called,
- * which keeps the package safe to import during SSR.
- */
-
 import { createWindow } from './runtime/window';
 
 export const freedom = {

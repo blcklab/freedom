@@ -1,30 +1,3 @@
-/**
- * engine/resize.ts
- *
- * Pure interaction logic for corner resizing. The opposite edge from the
- * dragged corner is always treated as the anchor: e.g. dragging the `nw`
- * handle keeps the bottom-right corner fixed while width/height/position
- * update together. Min/max size and bounds are enforced before plugins run.
- *
- * No DOM listeners, no pointer capture — one shared engine instance now
- * serves all four corners; `begin()` takes the handle for that gesture.
- */
-
-/**
- * engine/resize.ts
- *
- * Pure interaction logic for resizing from any of 8 handles: 4 corners
- * (diagonal — both width and height change together) and 4 edges
- * (single-axis — only width OR only height changes). For corner/edge
- * combinations that touch the west or north edge, that edge is always
- * treated as the anchor: e.g. dragging `nw` or plain `w` keeps the
- * right edge fixed while the left edge (and width/position) move.
- * Min/max size and bounds are enforced before plugins run.
- *
- * No DOM listeners, no pointer capture — one shared engine instance
- * serves all 8 handles; `begin()` takes the handle for that gesture.
- */
-
 import type {
   BoundsOption,
   FreedomPlugin,
@@ -53,20 +26,15 @@ export interface ResizeMoveResult {
 }
 
 export interface ResizeEngine {
-  /** Call once, on pointerdown on a resize handle, before any move(). */
-  begin(handle: ResizeHandle, pointer: Point, pointerEvent: PointerEvent): ResizeEventData;
-  /** Call on every pointermove while resizing. */
-  move(pointer: Point, pointerEvent: PointerEvent): ResizeMoveResult;
-  /** Call once, on pointerup/pointercancel. */
-  end(pointer: Point, pointerEvent: PointerEvent): ResizeEventData;
+    begin(handle: ResizeHandle, pointer: Point, pointerEvent: PointerEvent): ResizeEventData;
+    move(pointer: Point, pointerEvent: PointerEvent): ResizeMoveResult;
+    end(pointer: Point, pointerEvent: PointerEvent): ResizeEventData;
 }
 
-// A handle's *anchor* (which edge stays fixed) and its *axis* (which
-// dimension(s) it's allowed to touch) are independent properties.
 const WEST_HANDLES: readonly ResizeHandle[] = ['nw', 'w', 'sw'];
 const NORTH_HANDLES: readonly ResizeHandle[] = ['nw', 'n', 'ne'];
-const VERTICAL_ONLY_HANDLES: readonly ResizeHandle[] = ['n', 's']; // height changes, width fixed
-const HORIZONTAL_ONLY_HANDLES: readonly ResizeHandle[] = ['e', 'w']; // width changes, height fixed
+const VERTICAL_ONLY_HANDLES: readonly ResizeHandle[] = ['n', 's'];
+const HORIZONTAL_ONLY_HANDLES: readonly ResizeHandle[] = ['e', 'w'];
 
 export function createResizeEngine(options: ResizeEngineOptions): ResizeEngine {
   let activeHandle: ResizeHandle = 'se';
@@ -98,11 +66,6 @@ export function createResizeEngine(options: ResizeEngineOptions): ResizeEngine {
       let x = startPosition.x;
       let y = startPosition.y;
 
-      // Edge handles (n/s/e/w) leave the perpendicular axis untouched —
-      // this is what was missing before: every handle changed both
-      // dimensions, so there was no way to resize width-only or
-      // height-only, and the plain edges had no handle at all to catch
-      // the pointerdown (it fell through to drag instead).
       const width = affectsWidth
         ? (affectsWest ? startSize.width - dx : startSize.width + dx)
         : startSize.width;
@@ -113,8 +76,7 @@ export function createResizeEngine(options: ResizeEngineOptions): ResizeEngine {
       const clampedWidth = clamp(width, options.minWidth, Math.max(options.minWidth, options.maxWidth));
       const clampedHeight = clamp(height, options.minHeight, Math.max(options.minHeight, options.maxHeight));
 
-      // Re-anchor the opposite edge whenever clamping changed the size,
-      // so the edge that ISN'T being dragged never visually moves.
+      // Keep the opposite edge visually anchored after size clamping.
       if (affectsWest) x = startPosition.x + (startSize.width - clampedWidth);
       if (affectsNorth) y = startPosition.y + (startSize.height - clampedHeight);
 

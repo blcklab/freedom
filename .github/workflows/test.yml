@@ -10,9 +10,11 @@ on:
 
 jobs:
   test:
+    name: Test Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         node-version: [20, 22]
 
@@ -27,15 +29,19 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
-      - name: Build project
-        run: npm run build
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Run tests
         run: npm test
 
+      - name: Build project
+        run: npm run build
+
       - name: Validate npm package
-        run: npm pack
+        run: npm pack --dry-run

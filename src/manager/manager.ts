@@ -1,12 +1,3 @@
-/**
- * manager/manager.ts
- *
- * Owns the z-index stacking order and "which window is focused" state
- * across many FreedomWindow instances. Contains no DOM access of its own —
- * it only calls methods on the FreedomWindow objects it's given, so it
- * stays SSR-safe by construction.
- */
-
 import type {
   FreedomManager,
   FreedomManagerOptions,

@@ -1,11 +1,3 @@
-/**
- * core/interaction-manager.ts
- *
- * The single owner of raw Pointer Events for a window. Every FreedomWindow
- * has exactly one InteractionManager, and exactly one interaction — drag OR
- * resize, never both — can be active on it at a time.
- */
-
 import type { Point, ResizeHandle, DragEventData, ResizeEventData } from './types';
 import type { DragEngine, DragMoveResult } from '../engine/drag';
 import type { ResizeEngine, ResizeMoveResult } from '../engine/resize';
@@ -13,8 +5,7 @@ import type { ResizeEngine, ResizeMoveResult } from '../engine/resize';
 export type ActiveInteraction = 'drag' | 'resize' | null;
 
 export interface InteractionManagerOptions {
-  /** The window's root element. The single pointerdown listener lives here. */
-  element: HTMLElement;
+    element: HTMLElement;
 
   dragEngine: DragEngine;
   resizeEngine: ResizeEngine;
@@ -51,8 +42,7 @@ export class InteractionManager {
     return this._active;
   }
 
-  /** Begins a drag gesture from a pointerdown event. */
-  startDrag(event: PointerEvent): void {
+    startDrag(event: PointerEvent): void {
     if (this.destroyed || this._active !== null) return;
     this._active = 'drag';
     this.captureGesture(event);
@@ -60,8 +50,7 @@ export class InteractionManager {
     this.options.onDragStart(data);
   }
 
-  /** Begins a resize gesture from a pointerdown event. */
-  startResize(handle: ResizeHandle, event: PointerEvent): void {
+    startResize(handle: ResizeHandle, event: PointerEvent): void {
     if (this.destroyed || this._active !== null) return;
     this._active = 'resize';
     this.captureGesture(event);
@@ -69,8 +58,7 @@ export class InteractionManager {
     this.options.onResizeStart(data);
   }
 
-  /** Aborts whatever is active, silently — no `*end` callback fires. */
-  cancel(): void {
+    cancel(): void {
     this.teardown();
   }
 
@@ -88,9 +76,7 @@ export class InteractionManager {
     try {
       this.captureTarget.setPointerCapture?.(event.pointerId);
     } catch {
-      // Pointer capture can fail if the browser has already cancelled the
-      // pointer or the target is detached. Window-level listeners below still
-      // keep the gesture usable, so this should never crash consumers.
+      // Capture can fail after cancel/detach; window listeners still continue.
     }
 
     window.addEventListener('pointermove', this.handlePointerMove);
@@ -103,8 +89,7 @@ export class InteractionManager {
       try {
         this.captureTarget.releasePointerCapture?.(this.activePointerId);
       } catch {
-        // Same as setPointerCapture: release may throw after cancellation or
-        // detachment. Teardown must be best-effort and safe.
+        // Release must stay best-effort during teardown.
       }
     }
 
@@ -121,8 +106,7 @@ export class InteractionManager {
     if (this.destroyed || this._active !== null) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
-    // Resize wins ties: a resize handle may visually sit inside the draggable
-    // area, but it must start resizing, not dragging.
+    // Resize handles must win over drag handles.
     const resizeHandle = this.options.resolveResizeHandle(event.target);
     if (resizeHandle) {
       event.preventDefault();

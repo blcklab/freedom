@@ -1,12 +1,3 @@
-/**
- * runtime/window.ts
- *
- * Composition root for a single window. Initialization is intentionally
- * synchronous: base styles, initial size, initial position, and optional reveal
- * all happen before `freedom.window(...)` returns, so consumers can avoid the
- * common top-left flash during first render.
- */
-
 import type {
   BoundsOption,
   FreedomPlugin,
@@ -57,9 +48,7 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   const limits = normalizeSizeLimits(options);
   const positioning = resolvePositioning(element, options);
 
-  // The order matters: choose/apply a positioning context first, measure the
-  // rendered box second, resolve initial geometry third, then create a renderer
-  // that can preserve CSS-origin layouts while still moving with transforms.
+  // Initialization stays synchronous to prevent top-left first paint.
   applyBaseStyles(element, {
     positioning,
     forcePositioning: shouldForcePositioning(element, options),
@@ -78,7 +67,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   if (zIndex) element.style.zIndex = String(zIndex);
   revealIfRequested(element, options);
 
-  // ---- batched painting ------------------------------------------------------
   let pendingPosition: Point | null = null;
   let pendingSize: Size | null = null;
 
@@ -114,7 +102,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     },
   };
 
-  // ---- drag area --------------------------------------------------------------
   const dragHandleElement = resolveDragHandle(element, options.dragHandle);
 
   function isDragTarget(target: EventTarget | null): boolean {
@@ -132,7 +119,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     getSize: () => size,
   });
 
-  // ---- resize handles --------------------------------------------------------
   const resizeHandleElements = new Map<ResizeHandle, HTMLElement>();
 
   function resolveResizeHandle(target: EventTarget | null): ResizeHandle | null {
@@ -177,7 +163,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
     }
   }
 
-  // ---- the single interaction manager ---------------------------------------
   const interactionManager = createInteractionManager({
     element,
     dragEngine,
@@ -218,7 +203,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
   const initialResizeHandles = resolveEnabledHandles(options.resizable ?? true);
   if (initialResizeHandles.length > 0) setupResizeHandles(initialResizeHandles);
 
-  // ---- public API ------------------------------------------------------------
   const api: FreedomWindow = {
     id,
     element,
@@ -328,7 +312,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
 
   instances.set(element, api);
 
-  // Wire convenience option callbacks onto the same emitter consumers use.
   if (options.onDragStart) api.on('dragstart', options.onDragStart);
   if (options.onDrag) api.on('drag', options.onDrag);
   if (options.onDragEnd) api.on('dragend', options.onDragEnd);
@@ -340,10 +323,6 @@ export function createWindow(element: HTMLElement, options: FreedomWindowOptions
 
   return api;
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function assertHTMLElement(element: unknown): asserts element is HTMLElement {
   const maybeElement = element as Partial<HTMLElement> | null | undefined;
@@ -490,7 +469,6 @@ function resolveCenterBox(
     height: window.innerHeight || root.clientHeight,
   };
 }
-
 
 function readInitialSize(element: HTMLElement): Size {
   const rect = element.getBoundingClientRect();

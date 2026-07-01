@@ -1,24 +1,9 @@
-/**
- * plugins/snap.ts
- *
- * Reference plugin: snaps a window's edges to the viewport and/or to a
- * caller-supplied list of target rects (e.g. other windows' current
- * bounds) whenever it comes within `threshold` pixels during a drag.
- *
- * This is intentionally the *only* built-in plugin — it doubles as the
- * template for anyone writing their own (grid-snap, edge-tiling, etc.).
- * Plugins only ever see/return geometry; they never touch the DOM.
- */
-
 import type { FreedomPlugin, Rect } from '../core/types';
 
 export interface SnapPluginOptions {
-  /** Distance in pixels within which an edge snaps. Default: 8. */
-  threshold?: number;
-  /** Snap to the browser viewport edges. Default: true. */
-  snapToViewport?: boolean;
-  /** Lazily supplies additional rects to snap against (e.g. sibling windows). */
-  getSnapTargets?(): Rect[];
+    threshold?: number;
+    snapToViewport?: boolean;
+    getSnapTargets?(): Rect[];
 }
 
 export function snapPlugin(options: SnapPluginOptions = {}): FreedomPlugin {
