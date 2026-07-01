@@ -1,7 +1,7 @@
 {
   "name": "@blcklab/freedom",
   "version": "0.1.0",
-  "description": "Framework agnostic draggable & resizable windows for the DOM.",
+  "description": "Freedom for the DOM - a framework agnostic window engine",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

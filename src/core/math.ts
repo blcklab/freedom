@@ -1,7 +1,6 @@
 /**
- * core/math.ts
  *
- * Pure, side-effect-free numeric helpers. No DOM access.
+ * Pure mathematical numeric helpers. No DOM access.
  */
 
 import type { Bounds, Point, Size } from './types';
