@@ -14,9 +14,9 @@ export default defineConfig({
 
   clean: true,
 
-  sourcemap: true,
+  sourcemap: false,
 
-  target: 'es2022',
+  target: 'es2019',
 
   treeshake: true,
 
