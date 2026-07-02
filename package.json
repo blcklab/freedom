@@ -1,6 +1,6 @@
 {
   "name": "@blcklab/freedom",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Freedom for the DOM - a framework agnostic window engine",
   "type": "module",
   "main": "./dist/index.cjs",
