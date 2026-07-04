@@ -2,6 +2,17 @@
 
 A lightweight, framework-agnostic TypeScript library for draggable and resizable DOM windows.
 
+
+<p align="left">
+  <img src="https://img.shields.io/npm/v/@blcklab/freedom?style=flat-square" alt="npm version" />
+  <img src="https://img.shields.io/npm/dm/@blcklab/freedom?style=flat-square" alt="downloads" />
+  <img src="https://github.com/blcklab/freedom/actions/workflows/test.yml/badge.svg?style=flat-square" alt="tests" />
+  <img src="https://img.shields.io/github/license/blcklab/freedom?style=flat-square" alt="license" />
+</p>
+
+
+## Feature
+
 - Draggable windows
 - Optional resizing from edges and corners
 - Safe first-render positioning, including centered windows
