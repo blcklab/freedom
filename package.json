@@ -1,6 +1,6 @@
 {
   "name": "@blcklab/freedom",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A lightweight, framework-agnostic DOM window engine for draggable, resizable, and dockable UI.",
   "type": "module",
   "main": "./dist/index.cjs",
