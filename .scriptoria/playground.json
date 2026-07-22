@@ -76,7 +76,7 @@
       "asset": {
         "provider": "jsdelivr-npm",
         "package": "@blcklab/freedom",
-        "version": "0.2.1",
+        "version": "0.2.2",
         "path": "dist/manager.js"
       },
       "examplesRoot": ".scriptoria/playground/freedom-manager/examples",
@@ -116,7 +116,7 @@
       "asset": {
         "provider": "jsdelivr-npm",
         "package": "@blcklab/freedom",
-        "version": "0.2.1",
+        "version": "0.2.2",
         "path": "dist/snap.js"
       },
       "examplesRoot": ".scriptoria/playground/freedom-snap/examples",
