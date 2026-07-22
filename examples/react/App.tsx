@@ -1,11 +1,9 @@
-// React has no special integration package — `freedom` is plain DOM logic,
-// so a tiny hook is all that's needed to bind it to a ref's lifecycle.
-
 import { useEffect, useRef } from 'react';
-import { freedom, type FreedomManager, type FreedomWindowOptions } from 'freedom';
+import { freedom, type FreedomWindowOptions } from '@blcklab/freedom';
+import { createManager, type FreedomManager } from '@blcklab/freedom/manager';
+import { snapPlugin } from '@blcklab/freedom/plugins/snap';
 
-/** One manager shared by every window in the app. */
-const manager: FreedomManager = freedom.manager();
+const manager: FreedomManager = createManager();
 
 function useFreedomWindow(
   ref: React.RefObject<HTMLElement>,
@@ -23,11 +21,8 @@ function useFreedomWindow(
 
     return () => {
       element.removeEventListener('pointerdown', focusOnPointerDown);
-      win.destroy(); // manager.unregister happens automatically via the 'destroy' event
+      win.destroy();
     };
-    // Intentionally run once per mount — pass a new `key` prop if you need
-    // the window recreated with different options.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
 
@@ -46,7 +41,7 @@ function Panel({ title, initialPosition, children }: PanelProps) {
     minHeight: 160,
     dragHandle: '.panel-header',
     bounds: 'viewport',
-    plugins: [freedom.plugins.snap({ threshold: 12 })],
+    plugins: [snapPlugin({ threshold: 12 })],
   });
 
   return (
@@ -63,6 +58,7 @@ export default function App() {
       <Panel title="Inspector" initialPosition={{ x: 60, y: 60 }}>
         Drag by the header, resize from any edge or corner.
       </Panel>
+
       <Panel title="Console" initialPosition={{ x: 460, y: 140 }}>
         Click a panel to bring it to the front.
       </Panel>

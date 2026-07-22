@@ -17,17 +17,24 @@ export interface Bounds {
   maxY: number;
 }
 
-export type BoundsOption = 'none' | 'viewport' | 'parent' | Rect;
+export type BoundsInput = 'none' | 'viewport' | 'parent' | Rect | HTMLElement;
+export type BoundsOption = BoundsInput | BoundsResolver;
+export type BoundsResolver = () => BoundsOption | null | undefined;
 
 export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
-
 export type InitialPosition = Point | 'center';
-
 export type PositioningMode = 'absolute' | 'fixed' | 'relative';
+export type SnapEdge = 'left' | 'right' | 'top' | 'bottom';
+export type WindowMode = 'normal' | 'minimized' | 'maximized';
+
+export interface SnapTarget extends Rect {
+  id?: string;
+  data?: unknown;
+}
 
 export interface DragEventData {
-    position: Point;
-    delta: Point;
+  position: Point;
+  delta: Point;
   pointerEvent: PointerEvent;
 }
 
@@ -38,6 +45,58 @@ export interface ResizeEventData {
   pointerEvent: PointerEvent;
 }
 
+export interface SnapEventData {
+  target: SnapTarget;
+  edges: SnapEdge[];
+  position: Point;
+  size: Size;
+  pointerEvent?: PointerEvent;
+}
+
+export interface DropZone {
+  id?: string;
+  element?: HTMLElement | (() => HTMLElement | null | undefined);
+  rect?: Rect | (() => Rect | null | undefined);
+  threshold?: number;
+  snap?: boolean;
+  lockOnDrop?: boolean;
+  contains?: 'center' | 'intersect' | 'full';
+  data?: unknown;
+}
+
+export interface DockEventData {
+  zone: DropZone;
+  rect: Rect;
+  position: Point;
+  size: Size;
+  pointerEvent?: PointerEvent;
+}
+
+export interface PersistOptions {
+  key?: string;
+  storage?: Storage;
+  restore?: boolean;
+  save?: boolean;
+}
+
+export interface PersistedWindowState {
+  position: Point;
+  size: Size;
+  mode?: WindowMode;
+  restorePosition?: Point;
+  restoreSize?: Size;
+  dockedZoneId?: string;
+}
+
+export interface MinimizeOptions {
+  height?: number;
+  width?: number;
+}
+
+export interface MaximizeOptions {
+  bounds?: BoundsOption;
+}
+
 export interface WindowEventMap {
   dragstart: DragEventData;
   drag: DragEventData;
@@ -45,6 +104,13 @@ export interface WindowEventMap {
   resizestart: ResizeEventData;
   resize: ResizeEventData;
   resizeend: ResizeEventData;
+  snap: SnapEventData;
+  unsnap: SnapEventData;
+  dock: DockEventData;
+  undock: DockEventData;
+  minimize: PersistedWindowState;
+  maximize: PersistedWindowState;
+  restore: PersistedWindowState;
   focus: undefined;
   blur: undefined;
   destroy: undefined;
@@ -68,33 +134,31 @@ export interface FreedomPlugin {
 export interface PluginContext {
   readonly window: FreedomWindow;
   readonly element: HTMLElement;
+  emit<K extends keyof WindowEventMap>(event: K, data: WindowEventMap[K]): void;
 }
 
 export interface FreedomWindowOptions {
-    id?: string;
+  id?: string;
 
-    initialPosition?: InitialPosition;
+  initialPosition?: InitialPosition;
   initialSize?: Size;
-
-    positioning?: PositioningMode;
-
-    autoReveal?: boolean;
+  positioning?: PositioningMode;
+  autoReveal?: boolean;
 
   minWidth?: number;
   minHeight?: number;
   maxWidth?: number;
   maxHeight?: number;
 
-    draggable?: boolean;
-
-    resizable?: boolean | ResizeHandle[];
-
-    dragHandle?: string | HTMLElement | null;
+  draggable?: boolean;
+  resizable?: boolean | ResizeHandle[];
+  dragHandle?: string | HTMLElement | null;
 
   bounds?: BoundsOption;
+  dropZones?: DropZone[];
+  persist?: boolean | PersistOptions;
 
   zIndex?: number;
-
   plugins?: FreedomPlugin[];
 
   onDragStart?(data: DragEventData): void;
@@ -103,6 +167,13 @@ export interface FreedomWindowOptions {
   onResizeStart?(data: ResizeEventData): void;
   onResize?(data: ResizeEventData): void;
   onResizeEnd?(data: ResizeEventData): void;
+  onSnap?(data: SnapEventData): void;
+  onUnsnap?(data: SnapEventData): void;
+  onDock?(data: DockEventData): void;
+  onUndock?(data: DockEventData): void;
+  onMinimize?(state: PersistedWindowState): void;
+  onMaximize?(state: PersistedWindowState): void;
+  onRestore?(state: PersistedWindowState): void;
   onFocus?(): void;
   onBlur?(): void;
 }
@@ -115,6 +186,24 @@ export interface FreedomWindow {
   getSize(): Size;
   setPosition(point: Point): void;
   setSize(size: Size): void;
+
+  getBounds(): BoundsOption | undefined;
+  setBounds(bounds?: BoundsOption): void;
+
+  dock(zone?: string | DropZone): void;
+  undock(position?: Point): void;
+  isDocked(): boolean;
+  getDockedZone(): DropZone | null;
+
+  minimize(options?: MinimizeOptions): void;
+  maximize(options?: MaximizeOptions): void;
+  restore(): void;
+  isMinimized(): boolean;
+  isMaximized(): boolean;
+
+  saveState(): void;
+  restoreState(): boolean;
+  clearState(): void;
 
   focus(): void;
   blur(): void;
@@ -137,15 +226,15 @@ export interface FreedomWindow {
 }
 
 export interface FreedomManagerOptions {
-    baseZIndex?: number;
+  baseZIndex?: number;
 }
 
 export interface FreedomManager {
   register(win: FreedomWindow): void;
   unregister(win: FreedomWindow): void;
 
-    focus(win: FreedomWindow): void;
-    bringToFront(win: FreedomWindow): void;
+  focus(win: FreedomWindow): void;
+  bringToFront(win: FreedomWindow): void;
 
   getFocused(): FreedomWindow | null;
   list(): FreedomWindow[];

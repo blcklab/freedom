@@ -1,7 +1,7 @@
 {
   "name": "@blcklab/freedom",
-  "version": "0.1.5",
-  "description": "Framework agnostic draggable and resizable window engine for the DOM.",
+  "version": "0.2.1",
+  "description": "A lightweight, framework-agnostic DOM window engine for draggable, resizable, and dockable UI.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -45,9 +45,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepublishOnly": "npm run build",
-    "pack:check": "npm run typecheck && npm test && npm run build && npm pack --dry-run",
-    "size": "npm run build && npx size-limit"
+    "prepublishOnly": "npm run check",
+    "pack:check": "npm run check",
+    "check": "npm run typecheck && npm test && npm run build && npm pack --dry-run"
   },
   "keywords": [
     "draggable",

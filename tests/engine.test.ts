@@ -244,6 +244,7 @@ describe('manager/manager', () => {
 });
 
 import { createWindow } from '../src/runtime/window';
+import { snapPlugin } from '../src/plugins/snap';
 
 class FakeHTMLElement extends FakeEventTarget {
   nodeType = 1;
@@ -418,5 +419,156 @@ describe('runtime/window initialization', () => {
 
     win.destroy();
     expect(() => win.setPosition({ x: 1, y: 1 })).toThrow(/destroyed/i);
+  });
+
+
+  it('supports dynamic bounds resolver functions', () => {
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 100, height: 100 }) as unknown as HTMLElement;
+    let bounds = { x: 10, y: 20, width: 300, height: 200 };
+
+    const win = createWindow(element, {
+      positioning: 'fixed',
+      initialPosition: { x: 0, y: 0 },
+      initialSize: { width: 100, height: 100 },
+      bounds: () => bounds,
+      resizable: false,
+    });
+
+    win.setPosition({ x: 999, y: 999 });
+    expect(win.getPosition()).toEqual({ x: 210, y: 120 });
+
+    bounds = { x: 0, y: 0, width: 150, height: 150 };
+    win.setPosition({ x: 999, y: 999 });
+    expect(win.getPosition()).toEqual({ x: 50, y: 50 });
+  });
+
+  it('can dock into a drop zone, lock there, then undock', () => {
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 100, height: 100 }) as unknown as HTMLElement;
+
+    const win = createWindow(element, {
+      positioning: 'fixed',
+      initialPosition: { x: 0, y: 0 },
+      initialSize: { width: 100, height: 100 },
+      dropZones: [
+        {
+          id: 'dock',
+          rect: { x: 100, y: 100, width: 300, height: 200 },
+          lockOnDrop: true,
+        },
+      ],
+      resizable: false,
+    });
+
+    win.dock('dock');
+    expect(win.isDocked()).toBe(true);
+
+    win.setPosition({ x: 0, y: 0 });
+    expect(win.getPosition()).toEqual({ x: 100, y: 100 });
+
+    win.setPosition({ x: 999, y: 999 });
+    expect(win.getPosition()).toEqual({ x: 300, y: 200 });
+
+    win.undock({ x: 0, y: 0 });
+    expect(win.isDocked()).toBe(false);
+
+    win.setPosition({ x: 0, y: 0 });
+    expect(win.getPosition()).toEqual({ x: 0, y: 0 });
+  });
+
+  it('supports minimize, maximize, and restore helpers', () => {
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 200, height: 120 }) as unknown as HTMLElement;
+
+    const win = createWindow(element, {
+      positioning: 'fixed',
+      initialPosition: { x: 20, y: 30 },
+      initialSize: { width: 200, height: 120 },
+      resizable: false,
+    });
+
+    win.minimize({ height: 40 });
+    expect(win.isMinimized()).toBe(true);
+    expect(win.getSize()).toEqual({ width: 200, height: 40 });
+
+    win.restore();
+    expect(win.isMinimized()).toBe(false);
+    expect(win.getPosition()).toEqual({ x: 20, y: 30 });
+    expect(win.getSize()).toEqual({ width: 200, height: 120 });
+
+    win.maximize({ bounds: { x: 10, y: 10, width: 500, height: 300 } });
+    expect(win.isMaximized()).toBe(true);
+    expect(win.getPosition()).toEqual({ x: 10, y: 10 });
+    expect(win.getSize()).toEqual({ width: 500, height: 300 });
+
+    win.restore();
+    expect(win.isMaximized()).toBe(false);
+    expect(win.getPosition()).toEqual({ x: 20, y: 30 });
+    expect(win.getSize()).toEqual({ width: 200, height: 120 });
+  });
+
+  it('persists and restores position and size', () => {
+    const store = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value); },
+      removeItem: (key: string) => { store.delete(key); },
+      clear: () => { store.clear(); },
+      key: (index: number) => [...store.keys()][index] ?? null,
+      get length() { return store.size; },
+    } as Storage;
+
+    const element = new FakeHTMLElement({ left: 0, top: 0, width: 200, height: 120 }) as unknown as HTMLElement;
+    const win = createWindow(element, {
+      id: 'persisted',
+      positioning: 'fixed',
+      initialPosition: { x: 20, y: 30 },
+      initialSize: { width: 200, height: 120 },
+      persist: { storage },
+      resizable: false,
+    });
+
+    win.setPosition({ x: 80, y: 90 });
+    win.setSize({ width: 240, height: 160 });
+    win.destroy();
+
+    const nextElement = new FakeHTMLElement({ left: 0, top: 0, width: 200, height: 120 }) as unknown as HTMLElement;
+    const restored = createWindow(nextElement, {
+      id: 'persisted',
+      positioning: 'fixed',
+      persist: { storage },
+      resizable: false,
+    });
+
+    expect(restored.getPosition()).toEqual({ x: 80, y: 90 });
+    expect(restored.getSize()).toEqual({ width: 240, height: 160 });
+  });
+});
+
+describe('plugins/snap', () => {
+  beforeEach(() => {
+    installRuntimeDom();
+  });
+
+  it('emits snap and unsnap callbacks', () => {
+    const events: string[] = [];
+    const plugin = snapPlugin({
+      threshold: 10,
+      snapToViewport: false,
+      getSnapTargets: () => [{ id: 'dock', x: 100, y: 100, width: 300, height: 200 }],
+      onSnap: (data) => events.push(`snap:${data.edges.join(',')}`),
+      onUnsnap: () => events.push('unsnap'),
+    });
+
+    const ctx = {
+      element: new FakeHTMLElement() as unknown as HTMLElement,
+      window: {
+        getSize: () => ({ width: 100, height: 100 }),
+      } as unknown as FreedomWindow,
+      emit: () => {},
+    } as PluginContext;
+
+    plugin.onDrag?.({ position: { x: 95, y: 95 }, delta: { x: 0, y: 0 }, pointerEvent: {} as PointerEvent }, ctx);
+    plugin.onDrag?.({ position: { x: 150, y: 150 }, delta: { x: 0, y: 0 }, pointerEvent: {} as PointerEvent }, ctx);
+
+    expect(events).toEqual(['snap:left,top', 'unsnap']);
   });
 });

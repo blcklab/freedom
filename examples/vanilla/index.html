@@ -40,8 +40,10 @@
 
   <script type="module">
     import { freedom } from '../dist/index.js';
+    import { createManager } from '../dist/manager.js';
+    import { snapPlugin } from '../dist/snap.js';
 
-    const manager = freedom.manager();
+    const manager = createManager();
 
     function mountWindow(elementId, initialPosition) {
       const element = document.getElementById(elementId);
@@ -52,7 +54,7 @@
         minHeight: 140,
         dragHandle: '.win-header',
         bounds: 'viewport',
-        plugins: [freedom.plugins.snap({ threshold: 12 })],
+        plugins: [snapPlugin({ threshold: 12 })],
       });
 
       // Clicking anywhere on the window brings it to front.
