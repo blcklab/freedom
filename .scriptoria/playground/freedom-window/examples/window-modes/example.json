@@ -1,0 +1,9 @@
+{
+  "description": "Inspect minimize, maximize, and restore state transitions and their public CSS classes.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

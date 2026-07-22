@@ -1,0 +1,9 @@
+{
+  "description": "Build a valid FreedomWindowOptions object and a browser-ready initialization snippet.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

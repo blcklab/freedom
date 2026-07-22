@@ -1,0 +1,80 @@
+[
+  {
+    "id": "initial-position",
+    "label": "Initial position",
+    "type": "select",
+    "default": "center",
+    "options": [
+      {
+        "label": "Center",
+        "value": "center"
+      },
+      {
+        "label": "Top left",
+        "value": "top-left"
+      },
+      {
+        "label": "Top right",
+        "value": "top-right"
+      },
+      {
+        "label": "Bottom left",
+        "value": "bottom-left"
+      },
+      {
+        "label": "Bottom right",
+        "value": "bottom-right"
+      }
+    ]
+  },
+  {
+    "id": "width",
+    "label": "Width",
+    "type": "number",
+    "default": 420,
+    "min": 180,
+    "max": 960,
+    "step": 20
+  },
+  {
+    "id": "height",
+    "label": "Height",
+    "type": "number",
+    "default": 260,
+    "min": 100,
+    "max": 720,
+    "step": 20
+  },
+  {
+    "id": "bounds",
+    "label": "Bounds",
+    "type": "select",
+    "default": "viewport",
+    "options": [
+      {
+        "label": "Viewport",
+        "value": "viewport"
+      },
+      {
+        "label": "Parent",
+        "value": "parent"
+      },
+      {
+        "label": "None",
+        "value": "none"
+      }
+    ]
+  },
+  {
+    "id": "draggable",
+    "label": "Draggable",
+    "type": "checkbox",
+    "default": true
+  },
+  {
+    "id": "resizable",
+    "label": "Resizable",
+    "type": "checkbox",
+    "default": true
+  }
+]

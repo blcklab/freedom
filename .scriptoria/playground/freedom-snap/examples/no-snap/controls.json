@@ -1,0 +1,25 @@
+[
+  {
+    "id": "x",
+    "label": "Window X",
+    "type": "number",
+    "default": 240,
+    "step": 1
+  },
+  {
+    "id": "y",
+    "label": "Window Y",
+    "type": "number",
+    "default": 220,
+    "step": 1
+  },
+  {
+    "id": "threshold",
+    "label": "Threshold",
+    "type": "number",
+    "default": 12,
+    "min": 0,
+    "max": 80,
+    "step": 1
+  }
+]

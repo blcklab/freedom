@@ -1,0 +1,9 @@
+{
+  "description": "Design named drop zones and inspect the resulting docking configuration and application state.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

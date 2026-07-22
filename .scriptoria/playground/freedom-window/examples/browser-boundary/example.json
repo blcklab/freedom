@@ -1,0 +1,9 @@
+{
+  "description": "Verify that importing freeDOM is SSR-safe while createWindow correctly requires a browser DOM.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Compare fixed, absolute, and relative positioning strategies with valid option combinations.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

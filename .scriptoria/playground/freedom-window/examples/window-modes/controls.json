@@ -1,0 +1,31 @@
+[
+  {
+    "id": "mode",
+    "label": "Mode",
+    "type": "select",
+    "default": "normal",
+    "options": [
+      {
+        "label": "Normal",
+        "value": "normal"
+      },
+      {
+        "label": "Minimized",
+        "value": "minimized"
+      },
+      {
+        "label": "Maximized",
+        "value": "maximized"
+      }
+    ]
+  },
+  {
+    "id": "minimized-height",
+    "label": "Minimized height",
+    "type": "number",
+    "default": 52,
+    "min": 32,
+    "max": 96,
+    "step": 4
+  }
+]

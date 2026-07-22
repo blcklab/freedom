@@ -1,0 +1,48 @@
+[
+  {
+    "id": "zone",
+    "label": "Active zone",
+    "type": "select",
+    "default": "inprogress",
+    "options": [
+      {
+        "label": "To do",
+        "value": "todo"
+      },
+      {
+        "label": "In progress",
+        "value": "inprogress"
+      },
+      {
+        "label": "Completed",
+        "value": "completed"
+      }
+    ]
+  },
+  {
+    "id": "contains",
+    "label": "Detection mode",
+    "type": "select",
+    "default": "center",
+    "options": [
+      {
+        "label": "Center",
+        "value": "center"
+      },
+      {
+        "label": "Intersect",
+        "value": "intersect"
+      },
+      {
+        "label": "Full",
+        "value": "full"
+      }
+    ]
+  },
+  {
+    "id": "lock-on-drop",
+    "label": "Lock on drop",
+    "type": "checkbox",
+    "default": true
+  }
+]

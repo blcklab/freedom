@@ -58,15 +58,20 @@ const win = freedom.window(element, {
 
 1. [Installation](./installation.md)
 2. [Quick Start](./quick-start.md)
-3. [Positioning](./positioning.md)
-4. [Vue Usage](./vue.md)
-5. [Dynamic Bounds](./bounds.md)
-6. [Snap](./snap.md)
-7. [Drop Zones and Docking](./docking.md)
-8. [Persistence](./persistence.md)
-9. [Minimize and Maximize](./minimize-maximize.md)
-10. [Manager](./manager.md)
-11. [API Reference](./api/reference.md)
-12. [Task Board Recipe](./recipes/task-board.md)
-13. [Bridge Terminal Recipe](./recipes/bridge-terminal.md)
-14. [Troubleshooting](./troubleshooting.md)
+3. [Playground](./playground.md)
+4. [Positioning](./positioning.md)
+5. [Vue Usage](./vue.md)
+6. [Dynamic Bounds](./bounds.md)
+7. [Snap](./snap.md)
+8. [Drop Zones and Docking](./docking.md)
+9. [Persistence](./persistence.md)
+10. [Minimize and Maximize](./minimize-maximize.md)
+11. [Manager](./manager.md)
+12. [API Reference](./api/reference.md)
+13. [Task Board Recipe](./recipes/task-board.md)
+14. [Bridge Terminal Recipe](./recipes/bridge-terminal.md)
+15. [Troubleshooting](./troubleshooting.md)
+
+## Playground
+
+Use the [Scriptoria Playground](./playground.md) for configuration labs, live manager examples, and live snap-plugin calculations.

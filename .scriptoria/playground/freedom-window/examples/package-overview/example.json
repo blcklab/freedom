@@ -1,0 +1,9 @@
+{
+  "description": "Inspect the root package exports and confirm the SSR-safe import/browser-only creation contract.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

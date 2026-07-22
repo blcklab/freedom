@@ -1,0 +1,9 @@
+{
+  "description": "Run the real snap plugin and see exactly when a position crosses the configured threshold.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

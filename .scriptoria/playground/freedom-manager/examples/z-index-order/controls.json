@@ -1,0 +1,19 @@
+[
+  {
+    "id": "base",
+    "label": "Base z-index",
+    "type": "number",
+    "default": 10,
+    "min": 0,
+    "step": 10
+  },
+  {
+    "id": "cycles",
+    "label": "Bring-to-front calls",
+    "type": "number",
+    "default": 7,
+    "min": 0,
+    "max": 40,
+    "step": 1
+  }
+]

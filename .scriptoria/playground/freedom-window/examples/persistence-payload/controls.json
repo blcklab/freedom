@@ -1,0 +1,65 @@
+[
+  {
+    "id": "key",
+    "label": "Storage key",
+    "type": "text",
+    "default": "my-app:terminal",
+    "required": true
+  },
+  {
+    "id": "x",
+    "label": "X",
+    "type": "number",
+    "default": 80,
+    "step": 10
+  },
+  {
+    "id": "y",
+    "label": "Y",
+    "type": "number",
+    "default": 72,
+    "step": 10
+  },
+  {
+    "id": "width",
+    "label": "Width",
+    "type": "number",
+    "default": 420,
+    "min": 120,
+    "step": 20
+  },
+  {
+    "id": "height",
+    "label": "Height",
+    "type": "number",
+    "default": 260,
+    "min": 48,
+    "step": 20
+  },
+  {
+    "id": "mode",
+    "label": "Mode",
+    "type": "select",
+    "default": "normal",
+    "options": [
+      {
+        "label": "Normal",
+        "value": "normal"
+      },
+      {
+        "label": "Minimized",
+        "value": "minimized"
+      },
+      {
+        "label": "Maximized",
+        "value": "maximized"
+      }
+    ]
+  },
+  {
+    "id": "docked-zone",
+    "label": "Docked zone ID",
+    "type": "text",
+    "default": ""
+  }
+]

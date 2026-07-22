@@ -1,0 +1,9 @@
+{
+  "description": "Configure a deterministic custom target and execute the real snap plugin against it.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}

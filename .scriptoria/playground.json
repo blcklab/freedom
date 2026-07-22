@@ -1,0 +1,158 @@
+{
+  "$schema": "https://scriptoria.dev/schemas/v0.15/playground.schema.json",
+  "title": "freeDOM Playground",
+  "description": "Explore freeDOM configuration, SSR behavior, window-manager orchestration, and snap calculations with secure visual and structured examples.",
+  "defaultPlugin": "freedom-window",
+  "plugins": [
+    {
+      "id": "freedom-window",
+      "label": "freeDOM Window",
+      "description": "Configuration and lifecycle explorer for the browser-only freeDOM window engine.",
+      "adapter": "module",
+      "asset": {
+        "provider": "jsdelivr-npm",
+        "package": "@blcklab/freedom",
+        "version": "0.2.1",
+        "path": "dist/index.js"
+      },
+      "examplesRoot": ".scriptoria/playground/freedom-window/examples",
+      "defaultExample": "package-overview",
+      "examples": [
+        {
+          "id": "package-overview",
+          "label": "Package Overview",
+          "group": "Getting Started",
+          "order": 10
+        },
+        {
+          "id": "browser-boundary",
+          "label": "Browser Boundary",
+          "group": "Getting Started",
+          "order": 20
+        },
+        {
+          "id": "window-configurator",
+          "label": "Window Configurator",
+          "group": "Window Configuration",
+          "order": 30
+        },
+        {
+          "id": "positioning-modes",
+          "label": "Positioning Modes",
+          "group": "Window Configuration",
+          "order": 40
+        },
+        {
+          "id": "bounds-strategies",
+          "label": "Bounds Strategies",
+          "group": "Window Configuration",
+          "order": 50
+        },
+        {
+          "id": "docking-blueprint",
+          "label": "Docking Blueprint",
+          "group": "Window State",
+          "order": 60
+        },
+        {
+          "id": "window-modes",
+          "label": "Window Modes",
+          "group": "Window State",
+          "order": 70
+        },
+        {
+          "id": "persistence-payload",
+          "label": "Persistence Payload",
+          "group": "Window State",
+          "order": 80
+        }
+      ]
+    },
+    {
+      "id": "freedom-manager",
+      "label": "Window Manager",
+      "description": "Execute the real focus, registration, event, and z-index manager APIs using lightweight window doubles.",
+      "adapter": "module",
+      "asset": {
+        "provider": "jsdelivr-npm",
+        "package": "@blcklab/freedom",
+        "version": "0.2.1",
+        "path": "dist/manager.js"
+      },
+      "examplesRoot": ".scriptoria/playground/freedom-manager/examples",
+      "defaultExample": "focus-stack",
+      "examples": [
+        {
+          "id": "focus-stack",
+          "label": "Focus Stack",
+          "group": "Manager API",
+          "order": 10
+        },
+        {
+          "id": "register-unregister",
+          "label": "Register & Unregister",
+          "group": "Manager API",
+          "order": 20
+        },
+        {
+          "id": "manager-events",
+          "label": "Manager Events",
+          "group": "Manager API",
+          "order": 30
+        },
+        {
+          "id": "z-index-order",
+          "label": "Z-index Ordering",
+          "group": "Manager API",
+          "order": 40
+        }
+      ]
+    },
+    {
+      "id": "freedom-snap",
+      "label": "Snap Plugin",
+      "description": "Run the real snap plugin against deterministic custom targets inside Scriptoria's Worker sandbox.",
+      "adapter": "module",
+      "asset": {
+        "provider": "jsdelivr-npm",
+        "package": "@blcklab/freedom",
+        "version": "0.2.1",
+        "path": "dist/snap.js"
+      },
+      "examplesRoot": ".scriptoria/playground/freedom-snap/examples",
+      "defaultExample": "threshold-lab",
+      "examples": [
+        {
+          "id": "threshold-lab",
+          "label": "Threshold Lab",
+          "group": "Snap Calculations",
+          "order": 10
+        },
+        {
+          "id": "custom-target",
+          "label": "Custom Target",
+          "group": "Snap Calculations",
+          "order": 20
+        },
+        {
+          "id": "corner-snap",
+          "label": "Corner Snap",
+          "group": "Snap Calculations",
+          "order": 30
+        },
+        {
+          "id": "snap-events",
+          "label": "Snap & Unsnap Events",
+          "group": "Snap Events",
+          "order": 40
+        },
+        {
+          "id": "no-snap",
+          "label": "Outside Threshold",
+          "group": "Snap Events",
+          "order": 50
+        }
+      ]
+    }
+  ]
+}

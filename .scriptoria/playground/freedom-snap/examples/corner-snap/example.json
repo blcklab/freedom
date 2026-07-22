@@ -1,0 +1,9 @@
+{
+  "description": "Trigger simultaneous horizontal and vertical edge snaps at each target corner.",
+  "mode": "hybrid",
+  "editable": true,
+  "output": {
+    "mode": "html",
+    "field": "html"
+  }
+}
