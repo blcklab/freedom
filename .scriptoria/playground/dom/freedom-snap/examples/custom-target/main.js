@@ -18,10 +18,11 @@ function makeDraggable(element, plugin, context, status) {
 
 export function run({ module, inputs }) {
   const card = document.querySelector('#snap-card')
-  const target = document.querySelector('#target')
+  const snapTarget = document.getElementById('custom-snap-target')
   const status = document.querySelector('#status')
-  if (!(card instanceof HTMLElement) || !(target instanceof HTMLElement)) throw new Error('Snap elements were not found.')
-  const plugin = module.snapPlugin({ threshold: Number(inputs.threshold), snapToViewport: false, getSnapTargets: () => [{ id: 'custom', x: target.offsetLeft, y: target.offsetTop, width: target.offsetWidth, height: target.offsetHeight }], onSnap: ({ edges }) => { if (status) status.textContent = `Custom: ${edges.join(' + ')}` } })
+  if (!(card instanceof HTMLElement)) throw new Error('Snap card was not found.')
+  if (!(snapTarget instanceof HTMLElement)) throw new Error('Custom snap target was not found.')
+  const plugin = module.snapPlugin({ threshold: Number(inputs.threshold), snapToViewport: false, getSnapTargets: () => [{ id: 'custom', x: snapTarget.offsetLeft, y: snapTarget.offsetTop, width: snapTarget.offsetWidth, height: snapTarget.offsetHeight }], onSnap: ({ edges }) => { if (status) status.textContent = `Custom: ${edges.join(' + ')}` } })
   const context = { element: card, window: { getSize: () => ({ width: card.offsetWidth, height: card.offsetHeight }) }, emit() {} }
   return makeDraggable(card, plugin, context, status)
 }

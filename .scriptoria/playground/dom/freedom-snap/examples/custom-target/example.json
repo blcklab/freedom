@@ -1,6 +1,0 @@
-{
-  "description": "Provide deterministic custom snap targets from live DOM geometry.",
-  "viewport": {
-    "height": 640
-  }
-}

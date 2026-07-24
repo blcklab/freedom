@@ -18,13 +18,14 @@ function makeDraggable(element, plugin, context, status) {
 
 export function run({ module }) {
   const card = document.querySelector('#snap-card')
-  const target = document.querySelector('#target')
+  const snapTarget = document.getElementById('event-snap-target')
   const status = document.querySelector('#status')
   const log = document.querySelector('#log')
-  if (!(card instanceof HTMLElement) || !(target instanceof HTMLElement)) throw new Error('Snap elements were not found.')
+  if (!(card instanceof HTMLElement)) throw new Error('Snap card was not found.')
+  if (!(snapTarget instanceof HTMLElement)) throw new Error('Event snap target was not found.')
   const lines = []
   const write = (event, edges) => { lines.unshift(`${event.padEnd(8)} ${edges.join(' + ')}`); lines.splice(10); if (log) log.textContent = lines.join('\n'); if (status) status.textContent = event }
-  const plugin = module.snapPlugin({ threshold: 28, snapToViewport: false, getSnapTargets: () => [{ id: 'events', x: target.offsetLeft, y: target.offsetTop, width: target.offsetWidth, height: target.offsetHeight }], onSnap: ({ edges }) => write('snap', edges), onUnsnap: ({ edges }) => write('unsnap', edges) })
+  const plugin = module.snapPlugin({ threshold: 28, snapToViewport: false, getSnapTargets: () => [{ id: 'events', x: snapTarget.offsetLeft, y: snapTarget.offsetTop, width: snapTarget.offsetWidth, height: snapTarget.offsetHeight }], onSnap: ({ edges }) => write('snap', edges), onUnsnap: ({ edges }) => write('unsnap', edges) })
   const context = { element: card, window: { getSize: () => ({ width: card.offsetWidth, height: card.offsetHeight }) }, emit(event, data) { if (event === 'snap' || event === 'unsnap') console.info(event, data.edges) } }
   return makeDraggable(card, plugin, context, status)
 }
