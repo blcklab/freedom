@@ -1,0 +1,13 @@
+{
+  "controls": [
+    {
+      "id": "threshold",
+      "label": "Snap threshold",
+      "type": "number",
+      "default": 18,
+      "min": 2,
+      "max": 60,
+      "step": 2
+    }
+  ]
+}
