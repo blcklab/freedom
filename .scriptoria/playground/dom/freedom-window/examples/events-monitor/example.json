@@ -1,0 +1,6 @@
+{
+  "description": "Observe drag, resize, focus, and blur events in real time.",
+  "viewport": {
+    "height": 760
+  }
+}

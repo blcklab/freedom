@@ -1,0 +1,6 @@
+{
+  "description": "Register and unregister managed windows at runtime.",
+  "viewport": {
+    "height": 640
+  }
+}

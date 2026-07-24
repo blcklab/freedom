@@ -1,9 +1,0 @@
-{
-  "description": "Run the real createManager focus algorithm and inspect the resulting z-index stack.",
-  "mode": "hybrid",
-  "editable": true,
-  "output": {
-    "mode": "html",
-    "field": "html"
-  }
-}

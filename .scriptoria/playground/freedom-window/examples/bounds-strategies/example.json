@@ -1,9 +1,0 @@
-{
-  "description": "Explore every supported bounds strategy and the corresponding browser configuration.",
-  "mode": "hybrid",
-  "editable": true,
-  "output": {
-    "mode": "html",
-    "field": "html"
-  }
-}

@@ -1,0 +1,28 @@
+{
+  "controls": [
+    {
+      "id": "handles",
+      "label": "Enabled handles",
+      "type": "select",
+      "default": "all",
+      "options": [
+        {
+          "label": "All edges and corners",
+          "value": "all"
+        },
+        {
+          "label": "Corners only",
+          "value": "corners"
+        },
+        {
+          "label": "Horizontal only",
+          "value": "horizontal"
+        },
+        {
+          "label": "Vertical only",
+          "value": "vertical"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "controls": [
+    {
+      "id": "minwidth",
+      "label": "Minimum width",
+      "type": "number",
+      "default": 220,
+      "min": 120,
+      "max": 400,
+      "step": 10
+    },
+    {
+      "id": "minheight",
+      "label": "Minimum height",
+      "type": "number",
+      "default": 140,
+      "min": 100,
+      "max": 300,
+      "step": 10
+    },
+    {
+      "id": "maxwidth",
+      "label": "Maximum width",
+      "type": "number",
+      "default": 620,
+      "min": 300,
+      "max": 900,
+      "step": 10
+    },
+    {
+      "id": "maxheight",
+      "label": "Maximum height",
+      "type": "number",
+      "default": 420,
+      "min": 220,
+      "max": 700,
+      "step": 10
+    }
+  ]
+}

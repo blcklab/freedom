@@ -1,85 +1,109 @@
 {
-  "$schema": "https://scriptoria.dev/schemas/v0.15/playground.schema.json",
-  "title": "freeDOM Playground",
-  "description": "Explore freeDOM configuration, SSR behavior, window-manager orchestration, and snap calculations with secure visual and structured examples.",
+  "$schema": "https://scriptoria.dev/schemas/v0.16/playground.schema.json",
+  "title": "freeDOM Interactive Playground",
+  "description": "Real DOM examples for draggable, resizable, dockable, managed, and snapping interfaces.",
   "defaultPlugin": "freedom-window",
   "plugins": [
     {
       "id": "freedom-window",
       "label": "freeDOM Window",
-      "description": "Configuration and lifecycle explorer for the browser-only freeDOM window engine.",
-      "adapter": "module",
+      "description": "Interactive draggable, resizable, bounded, dockable, and persistent windows.",
+      "adapter": "dom",
       "asset": {
         "provider": "jsdelivr-npm",
         "package": "@blcklab/freedom",
-        "version": "0.2.2",
+        "version": "0.2.1",
         "path": "dist/index.js"
       },
-      "examplesRoot": ".scriptoria/playground/freedom-window/examples",
-      "defaultExample": "package-overview",
+      "examplesRoot": ".scriptoria/playground/dom/freedom-window/examples",
+      "defaultExample": "draggable-window",
       "examples": [
         {
-          "id": "package-overview",
-          "label": "Package Overview",
+          "id": "draggable-window",
+          "label": "Draggable Window",
           "group": "Getting Started",
           "order": 10
         },
         {
-          "id": "browser-boundary",
-          "label": "Browser Boundary",
+          "id": "resizable-window",
+          "label": "Resizable Window",
           "group": "Getting Started",
           "order": 20
         },
         {
-          "id": "window-configurator",
-          "label": "Window Configurator",
-          "group": "Window Configuration",
+          "id": "custom-drag-handle",
+          "label": "Custom Drag Handle",
+          "group": "Core Interaction",
           "order": 30
         },
         {
-          "id": "positioning-modes",
-          "label": "Positioning Modes",
-          "group": "Window Configuration",
+          "id": "container-bounds",
+          "label": "Container Bounds",
+          "group": "Bounds & Positioning",
           "order": 40
         },
         {
-          "id": "bounds-strategies",
-          "label": "Bounds Strategies",
-          "group": "Window Configuration",
+          "id": "centered-window",
+          "label": "Centered First Render",
+          "group": "Bounds & Positioning",
           "order": 50
         },
         {
-          "id": "docking-blueprint",
-          "label": "Docking Blueprint",
-          "group": "Window State",
+          "id": "resize-handles",
+          "label": "Resize Handle Sets",
+          "group": "Core Interaction",
           "order": 60
         },
         {
-          "id": "window-modes",
-          "label": "Window Modes",
-          "group": "Window State",
+          "id": "programmatic-api",
+          "label": "Programmatic API",
+          "group": "Instance API",
           "order": 70
         },
         {
-          "id": "persistence-payload",
-          "label": "Persistence Payload",
-          "group": "Window State",
+          "id": "events-monitor",
+          "label": "Window Events",
+          "group": "Instance API",
           "order": 80
+        },
+        {
+          "id": "window-modes",
+          "label": "Minimize, Maximize & Restore",
+          "group": "Window State",
+          "order": 90
+        },
+        {
+          "id": "docking-zones",
+          "label": "Docking Zones",
+          "group": "Docking & Persistence",
+          "order": 100
+        },
+        {
+          "id": "memory-persistence",
+          "label": "Persistence with Custom Storage",
+          "group": "Docking & Persistence",
+          "order": 110
+        },
+        {
+          "id": "multiple-windows",
+          "label": "Multiple Windows",
+          "group": "Real-World Examples",
+          "order": 120
         }
       ]
     },
     {
       "id": "freedom-manager",
       "label": "Window Manager",
-      "description": "Execute the real focus, registration, event, and z-index manager APIs using lightweight window doubles.",
-      "adapter": "module",
+      "description": "Real focus, registration, event, and z-index behavior from the manager subpath.",
+      "adapter": "dom",
       "asset": {
         "provider": "jsdelivr-npm",
         "package": "@blcklab/freedom",
-        "version": "0.2.2",
+        "version": "0.2.1",
         "path": "dist/manager.js"
       },
-      "examplesRoot": ".scriptoria/playground/freedom-manager/examples",
+      "examplesRoot": ".scriptoria/playground/dom/freedom-manager/examples",
       "defaultExample": "focus-stack",
       "examples": [
         {
@@ -89,7 +113,7 @@
           "order": 10
         },
         {
-          "id": "register-unregister",
+          "id": "dynamic-registration",
           "label": "Register & Unregister",
           "group": "Manager API",
           "order": 20
@@ -99,58 +123,40 @@
           "label": "Manager Events",
           "group": "Manager API",
           "order": 30
-        },
-        {
-          "id": "z-index-order",
-          "label": "Z-index Ordering",
-          "group": "Manager API",
-          "order": 40
         }
       ]
     },
     {
       "id": "freedom-snap",
       "label": "Snap Plugin",
-      "description": "Run the real snap plugin against deterministic custom targets inside Scriptoria's Worker sandbox.",
-      "adapter": "module",
+      "description": "Interactive drag surfaces powered by the real snap plugin subpath.",
+      "adapter": "dom",
       "asset": {
         "provider": "jsdelivr-npm",
         "package": "@blcklab/freedom",
-        "version": "0.2.2",
+        "version": "0.2.1",
         "path": "dist/snap.js"
       },
-      "examplesRoot": ".scriptoria/playground/freedom-snap/examples",
-      "defaultExample": "threshold-lab",
+      "examplesRoot": ".scriptoria/playground/dom/freedom-snap/examples",
+      "defaultExample": "viewport-snap",
       "examples": [
         {
-          "id": "threshold-lab",
-          "label": "Threshold Lab",
-          "group": "Snap Calculations",
+          "id": "viewport-snap",
+          "label": "Workspace Edge Snap",
+          "group": "Snap Interaction",
           "order": 10
         },
         {
           "id": "custom-target",
-          "label": "Custom Target",
-          "group": "Snap Calculations",
+          "label": "Custom Snap Target",
+          "group": "Snap Interaction",
           "order": 20
-        },
-        {
-          "id": "corner-snap",
-          "label": "Corner Snap",
-          "group": "Snap Calculations",
-          "order": 30
         },
         {
           "id": "snap-events",
           "label": "Snap & Unsnap Events",
           "group": "Snap Events",
-          "order": 40
-        },
-        {
-          "id": "no-snap",
-          "label": "Outside Threshold",
-          "group": "Snap Events",
-          "order": 50
+          "order": 30
         }
       ]
     }

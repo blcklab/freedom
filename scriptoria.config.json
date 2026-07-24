@@ -1,7 +1,7 @@
 {
-  "$schema": "https://scriptoria.dev/schemas/v0.15/scriptoria.schema.json",
+  "$schema": "https://scriptoria.dev/schemas/v0.16/scriptoria.schema.json",
   "title": "freeDOM Documentation",
-  "description": "Documentation and executable API labs for @blcklab/freedom.",
+  "description": "Documentation and interactive browser examples for @blcklab/freedom.",
   "content": {
     "root": "docs"
   },

@@ -1,0 +1,6 @@
+{
+  "description": "Run several independent windows with manual focus and z-index coordination.",
+  "viewport": {
+    "height": 700
+  }
+}

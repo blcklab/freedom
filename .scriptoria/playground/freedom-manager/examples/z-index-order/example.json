@@ -1,9 +1,0 @@
-{
-  "description": "Observe how repeated bringToFront calls produce deterministic increasing z-index values.",
-  "mode": "hybrid",
-  "editable": true,
-  "output": {
-    "mode": "html",
-    "field": "html"
-  }
-}

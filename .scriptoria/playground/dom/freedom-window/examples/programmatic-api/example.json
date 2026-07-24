@@ -1,0 +1,6 @@
+{
+  "description": "Control position, size, dragging, and resizing through the live instance API.",
+  "viewport": {
+    "height": 630
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "Observe callbacks and plugin-context events while crossing snap thresholds.",
+  "viewport": {
+    "height": 790
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "Observe real manager register, focus, blur, and unregister events.",
+  "viewport": {
+    "height": 790
+  }
+}

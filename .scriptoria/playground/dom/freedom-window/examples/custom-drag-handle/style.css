@@ -1,0 +1,139 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #eef2f8;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { min-height: 100vh; padding: 18px; background: #eef2f8; }
+button, input, select { font: inherit; }
+
+.demo-shell {
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.demo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+}
+
+.demo-toolbar button {
+  border: 1px solid #cad3e2;
+  border-radius: 9px;
+  padding: 7px 11px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+}
+
+.demo-toolbar button:hover { background: #f7f9fc; }
+
+.demo-status {
+  margin-left: auto;
+  color: #5c687d;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.desktop {
+  position: relative;
+  min-height: 500px;
+  overflow: hidden;
+  border: 1px solid #cbd4e2;
+  border-radius: 18px;
+  background:
+    linear-gradient(#e8edf5 1px, transparent 1px),
+    linear-gradient(90deg, #e8edf5 1px, transparent 1px),
+    #ffffff;
+  background-size: 24px 24px;
+  box-shadow: 0 18px 48px rgb(42 55 82 / 10%);
+}
+
+.desktop::before {
+  content: "freeDOM workspace";
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  color: #9aa5b7;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.window {
+  visibility: hidden;
+  overflow: hidden;
+  border: 1px solid #c5cfde;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 20px 55px rgb(32 44 69 / 18%);
+  color: #172033;
+}
+
+.window.freedom-focused { box-shadow: 0 24px 65px rgb(37 99 235 / 24%); }
+.window.freedom-dragging { opacity: .95; }
+.window.freedom-resizing { outline: 2px solid rgb(37 99 235 / 30%); }
+.window.freedom-docked { border-color: #60a5fa; }
+.window.freedom-maximized { border-radius: 12px; }
+.window.freedom-minimized .window__body { display: none; }
+
+.window__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e1e6ef;
+  background: #f7f9fc;
+  cursor: grab;
+  user-select: none;
+}
+.window__header:active { cursor: grabbing; }
+.window__title { font-size: 14px; font-weight: 750; }
+.window__dots { display: flex; gap: 6px; }
+.window__dots span { width: 9px; height: 9px; border-radius: 999px; background: #c4ccda; }
+.window__dots span:first-child { background: #fb7185; }
+.window__dots span:nth-child(2) { background: #fbbf24; }
+.window__dots span:last-child { background: #4ade80; }
+.window__body { padding: 16px; line-height: 1.55; color: #465269; }
+.window__body strong { color: #172033; }
+.window__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.window__meta div { padding: 9px; border-radius: 10px; background: #f3f6fa; font-size: 12px; }
+
+.log {
+  max-height: 150px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #d4dce8;
+  border-radius: 12px;
+  background: #101827;
+  color: #d7e2f3;
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { color: #e7ecf5; background: #10151f; }
+  body { background: #10151f; }
+  .desktop { border-color: #313b4d; background: #151c28; box-shadow: none; }
+  .desktop::before { color: #59657a; }
+  .window { border-color: #38445a; background: #202938; color: #edf2fa; box-shadow: 0 20px 55px rgb(0 0 0 / 35%); }
+  .window__header { border-color: #364156; background: #273246; }
+  .window__body { color: #bec8d9; }
+  .window__body strong { color: #f4f7fb; }
+  .window__meta div { background: #293449; }
+  .demo-toolbar button { border-color: #3b465a; background: #202938; color: #e7ecf5; }
+  .demo-toolbar button:hover { background: #293449; }
+  .demo-status { color: #9da9bc; }
+}
+
+.custom-grip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; background: #dbeafe; color: #1d4ed8; cursor: grab; }
+.window__body input { width: 100%; border: 1px solid #cad3e2; border-radius: 9px; padding: 9px 10px; background: transparent; color: inherit; }

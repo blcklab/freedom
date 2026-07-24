@@ -1,0 +1,6 @@
+{
+  "description": "Resize from all eight generated handles with size constraints.",
+  "viewport": {
+    "height": 640
+  }
+}

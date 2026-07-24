@@ -1,8 +1,0 @@
-{
-  "description": "Build the exact persisted state shape used by freeDOM and an app-owned backend payload.",
-  "mode": "hybrid",
-  "editable": true,
-  "output": {
-    "mode": "json"
-  }
-}

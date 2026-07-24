@@ -1,0 +1,6 @@
+{
+  "description": "Pass a selector or HTMLElement as the drag handle while preserving interactive content.",
+  "viewport": {
+    "height": 620
+  }
+}

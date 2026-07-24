@@ -1,0 +1,6 @@
+{
+  "description": "Drag a real freeDOM window inside a bounded workspace.",
+  "viewport": {
+    "height": 620
+  }
+}

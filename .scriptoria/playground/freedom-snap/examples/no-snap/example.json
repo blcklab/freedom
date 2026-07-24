@@ -1,8 +1,0 @@
-{
-  "description": "Confirm that positions outside every threshold remain unchanged and emit no snap event.",
-  "mode": "hybrid",
-  "editable": true,
-  "output": {
-    "mode": "json"
-  }
-}

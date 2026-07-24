@@ -1,0 +1,6 @@
+{
+  "description": "Demonstrate centered initialization and the autoReveal first-paint pattern.",
+  "viewport": {
+    "height": 620
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "Drag into real drop zones, lock to their bounds, then undock programmatically.",
+  "viewport": {
+    "height": 670
+  }
+}

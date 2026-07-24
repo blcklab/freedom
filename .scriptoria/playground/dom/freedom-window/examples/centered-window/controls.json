@@ -1,0 +1,22 @@
+{
+  "controls": [
+    {
+      "id": "width",
+      "label": "Width",
+      "type": "number",
+      "default": 380,
+      "min": 240,
+      "max": 640,
+      "step": 10
+    },
+    {
+      "id": "height",
+      "label": "Height",
+      "type": "number",
+      "default": 230,
+      "min": 140,
+      "max": 440,
+      "step": 10
+    }
+  ]
+}

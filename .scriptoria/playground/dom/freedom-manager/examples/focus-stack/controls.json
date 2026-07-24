@@ -1,0 +1,13 @@
+{
+  "controls": [
+    {
+      "id": "base",
+      "label": "Base z-index",
+      "type": "number",
+      "default": 100,
+      "min": 0,
+      "max": 1000,
+      "step": 10
+    }
+  ]
+}
